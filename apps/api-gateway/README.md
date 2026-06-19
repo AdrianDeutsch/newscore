@@ -13,7 +13,8 @@ Aggregiert redaktionelle Inhalte und liefert sie typsicher an das Nuxt-Frontend.
 | GraphQL-Schema       | `Article`, `Author`, `Category`, `ArticleConnection`, `SearchResult`  |
 | N+1-Vermeidung       | `@BatchMapping` (DataLoader) für `Article.author` / `Article.category` |
 | Caching              | Caffeine via `@Cacheable` (`article`, `articles`)                     |
-| Datenquelle          | austauschbar — aktuell `InMemory*Service` (Mock), später Sophora/ES   |
+| Volltextsuche        | ElasticSearch (Profil `elasticsearch`), In-Memory als Default ([ADR-004](../../docs/adr/ADR-004-elasticsearch-search.md)) |
+| Datenquelle          | austauschbar — `*Service`-Interfaces; Mock heute, Sophora später      |
 | Observability        | Actuator + `/actuator/prometheus`                                     |
 | Custom Scalar        | `DateTime` (→ `java.time.OffsetDateTime`)                             |
 
@@ -56,7 +57,7 @@ query {
 | Ebene             | Werkzeuge                       | Ort                                  |
 |-------------------|---------------------------------|--------------------------------------|
 | Unit              | JUnit 5, Mockito, AssertJ       | `src/test/java/de/newscore/unit/`    |
-| Integration       | `GraphQlTester` (`@SpringBootTest`) | `src/test/java/de/newscore/integration/` |
+| Integration       | `GraphQlTester`, **Testcontainers** (echtes ES) | `src/test/java/de/newscore/integration/` |
 
 ```bash
 ./mvnw test                              # alle Tests
@@ -67,6 +68,11 @@ query {
 
 Coverage-Report: `target/site/jacoco/index.html`
 
+> **Hinweis Testcontainers:** Der ElasticSearch-Integrationstest ist mit
+> `@Testcontainers(disabledWithoutDocker = true)` markiert und wird **ohne laufenden Docker
+> übersprungen** (die Logik ist zusätzlich durch Docker-freie Unit-Tests abgedeckt, daher bleibt das
+> Coverage-Gate erfüllt). In CI mit Docker läuft er gegen echtes ElasticSearch.
+
 ## 🗂 Struktur
 
 ```
@@ -75,9 +81,11 @@ src/main/java/de/newscore/
 ├── config/         # CachingConfig (Caffeine), GraphQlConfig (DateTime-Scalar)
 ├── domain/         # Article, Author, Category, ArticleConnection, SearchResult (records)
 ├── service/        # *Service-Interfaces + InMemory*Service-Impls (Mock-Daten)
+├── search/         # ArticleDocument, Repository, ElasticsearchSearchService, ArticleIndexer
 └── resolver/       # ArticleController (Query + BatchMapping), SearchController
 src/main/resources/
-├── application.yml
+├── application.yml             # Default-Profil (In-Memory-Suche)
+├── application-elasticsearch.yml  # Profil "elasticsearch"
 └── graphql/schema.graphqls
 ```
 
@@ -90,7 +98,7 @@ docker run -p 8080:8080 newscore/api-gateway
 
 ## 🛣 Roadmap (Folge-Iterationen)
 
+- ✅ ElasticSearch-`SearchService` (Volltextsuche) — erledigt
 - Sophora-/Repository-Implementierung der `*Service`-Interfaces
-- ElasticSearch-`SearchService` (Epic 3)
-- Kafka-Consumer für aktive Cache-Invalidierung (Epic 4)
+- Kafka-Consumer für aktive Cache-Invalidierung + ES-Indexierung (Epic 4)
 - Spotbugs im Lint-Stage, strukturierte JSON-Logs für Loki (Epic 6)

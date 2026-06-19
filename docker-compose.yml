@@ -1,25 +1,49 @@
 name: newscore
 
 # One-command demo stack: `docker compose up --build`
+#   - elasticsearch (search index)           -> http://localhost:9200
 #   - api-gateway (Spring Boot GraphQL BFF)  -> http://localhost:8080/graphiql
 #   - frontend    (Nuxt 3 SSR)               -> http://localhost:3000
 #
-# Postgres and ElasticSearch are prepared for later epics (metadata / search) and are NOT yet
-# consumed by the apps. Start them on demand with: `docker compose --profile data up`
+# The gateway runs with the "elasticsearch" profile and indexes articles on startup (full-text search).
+# Postgres is prepared for later epics (analytics/metadata) and is started on demand:
+#   docker compose --profile data up
 
 services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+    networks: [newscore]
+
   api-gateway:
     build:
       context: ./apps/api-gateway
     image: newscore/api-gateway:dev
     ports:
       - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: elasticsearch
+      SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "bash -c '</dev/tcp/127.0.0.1/8080' 2>/dev/null || exit 1"]
       interval: 10s
       timeout: 3s
       retries: 12
-      start_period: 30s
+      start_period: 40s
     networks: [newscore]
 
   frontend:
@@ -37,7 +61,7 @@ services:
         condition: service_healthy
     networks: [newscore]
 
-  # ---- Prepared for later epics (not yet wired into the apps) -------------
+  # ---- Prepared for Epic 4 (analytics/metadata), not yet wired into the apps ----
   postgres:
     image: postgres:16-alpine
     profiles: [data]
@@ -49,17 +73,6 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-    networks: [newscore]
-
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
-    profiles: [data]
-    environment:
-      discovery.type: single-node
-      xpack.security.enabled: "false"
-      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
-    ports:
-      - "9200:9200"
     networks: [newscore]
 
 volumes:

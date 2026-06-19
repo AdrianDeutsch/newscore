@@ -1,0 +1,9 @@
+# Activated with: --spring.profiles.active=elasticsearch  (or SPRING_PROFILES_ACTIVE=elasticsearch)
+# Switches the search backend from in-memory to ElasticSearch (see ADR-004).
+spring:
+  elasticsearch:
+    uris: ${SPRING_ELASTICSEARCH_URIS:http://localhost:9200}
+  data:
+    elasticsearch:
+      repositories:
+        enabled: true

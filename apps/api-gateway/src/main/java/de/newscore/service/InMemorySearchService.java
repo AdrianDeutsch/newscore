@@ -4,15 +4,18 @@ import de.newscore.domain.Article;
 import de.newscore.domain.SearchResult;
 import java.util.List;
 import java.util.Locale;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 /**
  * In-memory {@link SearchService} performing a case-insensitive substring match over an article's
  * title, teaser, body and tags. Reuses {@link ArticleService} as the single source of article data
- * (DRY); a future implementation will delegate to ElasticSearch (Epic 3).
+ * (DRY). Active by default; the ElasticSearch implementation takes over under the
+ * {@code elasticsearch} profile (see ADR-004).
  */
 @Service
+@Profile("!elasticsearch")
 public class InMemorySearchService implements SearchService {
 
     private static final int MAX_LIMIT = 50;

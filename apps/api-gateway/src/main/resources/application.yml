@@ -1,6 +1,11 @@
 spring:
   application:
     name: newscore-api-gateway
+  data:
+    elasticsearch:
+      repositories:
+        # Disabled by default (in-memory search). Enabled under the "elasticsearch" profile.
+        enabled: false
   graphql:
     # GraphiQL UI for local exploration at http://localhost:8080/graphiql
     graphiql:

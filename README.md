@@ -44,9 +44,9 @@
 | Application-Cache               |   ✅   | Caffeine (`@Cacheable`)                  | [ADR-003](docs/adr/ADR-003-caffeine-caching.md) |
 | SSR-Frontend                    |   ✅   | Nuxt 3, Vue 3, TypeScript                | `useAsyncData` |
 | GraphQL-Client                  |   ✅   | urql (`ssrExchange`)                     | [ADR-001](docs/adr/ADR-001-graphql-client-urql.md) |
-| Volltextsuche                   |   ✅   | In-Memory (ES-ready Interface)           | Mock-Stufe |
+| Volltextsuche                   |   ✅   | ElasticSearch 8 (Profil-gesteuert)       | [ADR-004](docs/adr/ADR-004-elasticsearch-search.md), Testcontainers |
 | Observability-Endpoint          |   ✅   | Actuator + `/actuator/prometheus`        | Grafana folgt |
-| Lokales Stack-Setup             |   ✅   | docker-compose                           | `--profile data` für PG/ES |
+| Lokales Stack-Setup             |   ✅   | docker-compose (inkl. ElasticSearch)     | `--profile data` für Postgres |
 | CI-Pipeline                     |   ✅   | GitLab CI (5 Stages)                     | Coverage-Gate |
 | Kafka / OpenShift / Monitoring  |   🔜   | —                                        | Roadmap |
 
@@ -67,8 +67,8 @@ flowchart TD
 
     classDef done fill:#ecfdf5,stroke:#00a862,color:#0b1220;
     classDef soon fill:#f1f5f9,stroke:#94a3b8,color:#475569,stroke-dasharray:4 3;
-    class Nuxt,GW done;
-    class Apache,Varnish,CMS,ES,PG,Kafka,Analytics,Prom soon;
+    class Nuxt,GW,ES done;
+    class Apache,Varnish,CMS,PG,Kafka,Analytics,Prom soon;
 ```
 
 Grün = in dieser Iteration umgesetzt · gestrichelt = vorgesehen (Roadmap).
@@ -109,7 +109,7 @@ Strikte Testpyramide — Bulk an Unit-Tests, gezielte Integrationstests, wenige 
         ┌────────────────────┐
         │   E2E (Playwright) │   🔜 Roadmap
         ├────────────────────┤
-        │  Integrationstests │   GraphQlTester (Backend)
+        │  Integrationstests │   GraphQlTester · Testcontainers (ES)
         ├────────────────────┤
         │     Unit-Tests     │   JUnit 5 · Vitest  (Bulk)
         └────────────────────┘
@@ -117,8 +117,8 @@ Strikte Testpyramide — Bulk an Unit-Tests, gezielte Integrationstests, wenige 
 
 | Schicht     | Tooling                          | Umfang                         |
 |-------------|----------------------------------|--------------------------------|
-| Backend     | JUnit 5, Mockito, AssertJ        | 21 Unit-Tests                  |
-| Backend     | `GraphQlTester` (`@SpringBootTest`) | 4 Integrationstests         |
+| Backend     | JUnit 5, Mockito, AssertJ        | 28 Unit-Tests                  |
+| Backend     | `GraphQlTester`, Testcontainers (echtes ES) | 8 Integrationstests |
 | Frontend    | Vitest, Vue Test Utils, happy-dom | 16 Tests (Komponenten + Service) |
 
 ```bash
@@ -174,14 +174,16 @@ Root Cause, Regressionstest).
 | [ADR-001](docs/adr/ADR-001-graphql-client-urql.md) | urql als GraphQL-Client im Frontend |
 | [ADR-002](docs/adr/ADR-002-graphql-bff-pattern.md) | GraphQL-Gateway nach BFF-Pattern |
 | [ADR-003](docs/adr/ADR-003-caffeine-caching.md) | Caffeine als In-Process-Cache |
+| [ADR-004](docs/adr/ADR-004-elasticsearch-search.md) | ElasticSearch als Volltextsuche (Profil-gesteuert) |
 
 ## 🛣 Roadmap
 
+- ✅ **Volltextsuche:** ElasticSearch-`SearchService` (profil-gesteuert, Testcontainers) — erledigt
 - **Epic 3 — Caching:** Varnish-VCL + Apache-Proxy, gezielte `PURGE`-Invalidierung
-- **Epic 4 — Eventing:** Kafka-Topics, Schema-Registry, DLQ, EmbeddedKafka-Tests
+- **Epic 4 — Eventing:** Kafka-Topics, Schema-Registry, DLQ — treibt ES-Indexierung + Postgres-Analytics
 - **Epic 5 — Plattform:** Helm-Chart, ArgoCD-Apps, HPA/PDB, NetworkPolicies (OpenShift)
 - **Epic 6 — Observability:** Grafana-Dashboards, Prometheus-Alerts, Loki, OpenTelemetry
-- **Datenanbindung:** Sophora-CMS-Resolver, ElasticSearch-`SearchService`
+- **Datenanbindung:** Sophora-CMS-Resolver für die `*Service`-Interfaces
 - **Frontend:** GraphQL-Codegen, Playwright-E2E, i18n, PWA
 
 ## 📄 Lizenz
