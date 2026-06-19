@@ -1,6 +1,7 @@
 package de.newscore.unit.search;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -12,6 +13,7 @@ import de.newscore.search.ArticleSearchRepository;
 import de.newscore.service.ArticleService;
 import de.newscore.unit.fixtures.ArticleFixture;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,6 +64,42 @@ class ArticleIndexerTest {
         assertThat(count).isZero();
         verify(indexOps, never()).createWithMapping();
         verify(repository).saveAll(anyList());
+        verify(indexOps).refresh();
+    }
+
+    @Test
+    @DisplayName("indexOne() saves the article when it still exists")
+    void indexOne_existingArticle_saves() {
+        when(operations.indexOps(ArticleDocument.class)).thenReturn(indexOps);
+        when(indexOps.exists()).thenReturn(true);
+        when(articleService.findById("1")).thenReturn(Optional.of(ArticleFixture.published()));
+
+        indexer.indexOne("1");
+
+        verify(repository).save(any(ArticleDocument.class));
+        verify(indexOps).refresh();
+    }
+
+    @Test
+    @DisplayName("indexOne() deletes from the index when the article no longer exists")
+    void indexOne_missingArticle_deletes() {
+        when(operations.indexOps(ArticleDocument.class)).thenReturn(indexOps);
+        when(indexOps.exists()).thenReturn(true);
+        when(articleService.findById("x")).thenReturn(Optional.empty());
+
+        indexer.indexOne("x");
+
+        verify(repository).deleteById("x");
+    }
+
+    @Test
+    @DisplayName("delete() removes the article by id and refreshes")
+    void delete_removesByIdAndRefreshes() {
+        when(operations.indexOps(ArticleDocument.class)).thenReturn(indexOps);
+
+        indexer.delete("9");
+
+        verify(repository).deleteById("9");
         verify(indexOps).refresh();
     }
 }

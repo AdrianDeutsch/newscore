@@ -42,16 +42,49 @@ public class ArticleIndexer {
      * @return the number of indexed documents
      */
     public long indexAll() {
-        IndexOperations indexOps = operations.indexOps(ArticleDocument.class);
-        if (!indexOps.exists()) {
-            indexOps.createWithMapping();
-        }
-
+        ensureIndex();
         List<ArticleDocument> documents = articleService.findAll().stream()
                 .map(ArticleDocument::from)
                 .toList();
         repository.saveAll(documents);
-        indexOps.refresh();
+        refresh();
         return documents.size();
+    }
+
+    /**
+     * (Re)indexes a single article by id, driven by an {@code article.published}/{@code updated}
+     * event. If the article no longer exists it is removed from the index instead.
+     *
+     * @param articleId the affected article id
+     */
+    public void indexOne(String articleId) {
+        ensureIndex();
+        articleService.findById(articleId).ifPresentOrElse(
+                article -> {
+                    repository.save(ArticleDocument.from(article));
+                    refresh();
+                },
+                () -> delete(articleId));
+    }
+
+    /**
+     * Removes an article from the index, driven by an {@code article.deleted} event.
+     *
+     * @param articleId the affected article id
+     */
+    public void delete(String articleId) {
+        repository.deleteById(articleId);
+        refresh();
+    }
+
+    private void ensureIndex() {
+        IndexOperations indexOps = operations.indexOps(ArticleDocument.class);
+        if (!indexOps.exists()) {
+            indexOps.createWithMapping();
+        }
+    }
+
+    private void refresh() {
+        operations.indexOps(ArticleDocument.class).refresh();
     }
 }

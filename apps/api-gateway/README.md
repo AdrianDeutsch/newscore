@@ -14,6 +14,8 @@ Aggregiert redaktionelle Inhalte und liefert sie typsicher an das Nuxt-Frontend.
 | N+1-Vermeidung       | `@BatchMapping` (DataLoader) für `Article.author` / `Article.category` |
 | Caching              | Caffeine via `@Cacheable` (`article`, `articles`)                     |
 | Volltextsuche        | ElasticSearch (Profil `elasticsearch`), In-Memory als Default ([ADR-004](../../docs/adr/ADR-004-elasticsearch-search.md)) |
+| Event-Streaming      | Kafka (Profil `kafka`): `search.executed`-Producer, `article.*`-Consumer, DLQ ([ADR-005](../../docs/adr/ADR-005-kafka-eventing.md)) |
+| Aktive Invalidierung | `article.events` → ES-Reindex + Cache-Evict; CMS-Simulator `POST /internal/cms/articles/{id}/publish` |
 | Datenquelle          | austauschbar — `*Service`-Interfaces; Mock heute, Sophora später      |
 | Observability        | Actuator + `/actuator/prometheus`                                     |
 | Custom Scalar        | `DateTime` (→ `java.time.OffsetDateTime`)                             |
@@ -82,10 +84,13 @@ src/main/java/de/newscore/
 ├── domain/         # Article, Author, Category, ArticleConnection, SearchResult (records)
 ├── service/        # *Service-Interfaces + InMemory*Service-Impls (Mock-Daten)
 ├── search/         # ArticleDocument, Repository, ElasticsearchSearchService, ArticleIndexer
+├── kafka/          # Events, EventPublisher (NoOp/Kafka), Consumer, Topics, DLQ-Config
+├── web/            # CmsSimulatorController (REST → article.events)
 └── resolver/       # ArticleController (Query + BatchMapping), SearchController
 src/main/resources/
-├── application.yml             # Default-Profil (In-Memory-Suche)
+├── application.yml             # Default-Profil (In-Memory-Suche, kein Broker)
 ├── application-elasticsearch.yml  # Profil "elasticsearch"
+├── application-kafka.yml          # Profil "kafka"
 └── graphql/schema.graphqls
 ```
 
@@ -99,6 +104,7 @@ docker run -p 8080:8080 newscore/api-gateway
 ## 🛣 Roadmap (Folge-Iterationen)
 
 - ✅ ElasticSearch-`SearchService` (Volltextsuche) — erledigt
+- ✅ Kafka-Eventing: `search.executed`-Producer, `article.*`-Consumer (ES-Reindex + Cache-Evict), DLQ — erledigt
 - Sophora-/Repository-Implementierung der `*Service`-Interfaces
-- Kafka-Consumer für aktive Cache-Invalidierung + ES-Indexierung (Epic 4)
+- Avro + Schema-Registry statt JSON (siehe ADR-005)
 - Spotbugs im Lint-Stage, strukturierte JSON-Logs für Loki (Epic 6)

@@ -1,10 +1,12 @@
 package de.newscore.unit.resolver;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import de.newscore.domain.SearchResult;
+import de.newscore.kafka.EventPublisher;
 import de.newscore.resolver.SearchController;
 import de.newscore.service.SearchService;
 import de.newscore.unit.fixtures.ArticleFixture;
@@ -21,6 +23,8 @@ class SearchControllerTest {
 
     @Mock
     private SearchService searchService;
+    @Mock
+    private EventPublisher eventPublisher;
     @InjectMocks
     private SearchController controller;
 
@@ -32,5 +36,17 @@ class SearchControllerTest {
 
         assertThat(controller.search("klima", 10)).isSameAs(expected);
         verify(searchService).search("klima", 10);
+    }
+
+    @Test
+    @DisplayName("search() publishes a search-executed analytics event")
+    void search_publishesAnalyticsEvent() {
+        SearchResult result = new SearchResult("klima", 2, List.of(ArticleFixture.published()));
+        when(searchService.search("klima", 10)).thenReturn(result);
+
+        controller.search("klima", 10);
+
+        verify(eventPublisher).publishSearchExecuted(
+                argThat(event -> event.query().equals("klima") && event.resultCount() == 2));
     }
 }
