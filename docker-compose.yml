@@ -1,13 +1,18 @@
 name: newscore
 
 # One-command demo stack: `docker compose up --build`
-#   - elasticsearch (search index)           -> http://localhost:9200
-#   - api-gateway (Spring Boot GraphQL BFF)  -> http://localhost:8080/graphiql
-#   - frontend    (Nuxt 3 SSR)               -> http://localhost:3000
+#   - elasticsearch    (search index)           -> http://localhost:9200
+#   - kafka            (event bus, KRaft)        -> localhost:9092
+#   - postgres         (analytics store)         -> localhost:5432
+#   - api-gateway      (Spring Boot GraphQL BFF) -> http://localhost:8080/graphiql
+#   - analytics-service(Kafka -> Postgres)
+#   - frontend         (Nuxt 3 SSR)             -> http://localhost:3000
 #
-# The gateway runs with the "elasticsearch" profile and indexes articles on startup (full-text search).
-# Postgres is prepared for later epics (analytics/metadata) and is started on demand:
-#   docker compose --profile data up
+# The gateway runs with the "elasticsearch,kafka" profiles: it indexes articles into ES, emits
+# search.executed events and consumes article.events (re-index + cache eviction). The
+# analytics-service writes search analytics into PostgreSQL.
+#
+# Simulate a CMS publish:  curl -XPOST http://localhost:8080/internal/cms/articles/1/publish
 
 services:
   elasticsearch:
@@ -26,6 +31,52 @@ services:
       start_period: 30s
     networks: [newscore]
 
+  kafka:
+    image: apache/kafka:3.8.0
+    ports:
+      - "9092:9092"   # internal (advertised as kafka:9092 for in-network services)
+      - "9094:9094"   # external (advertised as localhost:9094 for host clients)
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,EXTERNAL://0.0.0.0:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 20s
+    networks: [newscore]
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: newscore
+      POSTGRES_PASSWORD: newscore
+      POSTGRES_DB: newscore
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./services/analytics-service/sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U newscore -d newscore"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks: [newscore]
+
   api-gateway:
     build:
       context: ./apps/api-gateway
@@ -33,10 +84,13 @@ services:
     ports:
       - "8080:8080"
     environment:
-      SPRING_PROFILES_ACTIVE: elasticsearch
+      SPRING_PROFILES_ACTIVE: elasticsearch,kafka
       SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on:
       elasticsearch:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "bash -c '</dev/tcp/127.0.0.1/8080' 2>/dev/null || exit 1"]
@@ -44,6 +98,26 @@ services:
       timeout: 3s
       retries: 12
       start_period: 40s
+    networks: [newscore]
+
+  analytics-service:
+    build:
+      context: ./services/analytics-service
+    image: newscore/analytics-service:dev
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_TOPIC: newscore.search.events
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: newscore
+      PGPASSWORD: newscore
+      PGDATABASE: newscore
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: on-failure
     networks: [newscore]
 
   frontend:
@@ -59,20 +133,6 @@ services:
     depends_on:
       api-gateway:
         condition: service_healthy
-    networks: [newscore]
-
-  # ---- Prepared for Epic 4 (analytics/metadata), not yet wired into the apps ----
-  postgres:
-    image: postgres:16-alpine
-    profiles: [data]
-    environment:
-      POSTGRES_USER: newscore
-      POSTGRES_PASSWORD: newscore
-      POSTGRES_DB: newscore
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
     networks: [newscore]
 
 volumes:

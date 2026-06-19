@@ -1,0 +1,28 @@
+{
+  "name": "@newscore/analytics-service",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Kafka consumer that records NewsCore search analytics into PostgreSQL",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "tsc -p tsconfig.json && node dist/index.js",
+    "lint": "eslint .",
+    "test:unit": "vitest"
+  },
+  "dependencies": {
+    "kafkajs": "^2.2.4",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.13.0",
+    "@types/node": "^22.8.0",
+    "@types/pg": "^8.11.10",
+    "@vitest/coverage-v8": "^4.1.9",
+    "eslint": "^9.13.0",
+    "globals": "^15.11.0",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.12.2",
+    "vitest": "^4.1.9"
+  }
+}

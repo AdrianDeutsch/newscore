@@ -45,10 +45,13 @@
 | SSR-Frontend                    |   ✅   | Nuxt 3, Vue 3, TypeScript                | `useAsyncData` |
 | GraphQL-Client                  |   ✅   | urql (`ssrExchange`)                     | [ADR-001](docs/adr/ADR-001-graphql-client-urql.md) |
 | Volltextsuche                   |   ✅   | ElasticSearch 8 (Profil-gesteuert)       | [ADR-004](docs/adr/ADR-004-elasticsearch-search.md), Testcontainers |
+| Event-Streaming                 |   ✅   | Kafka: Producer/Consumer + DLQ           | [ADR-005](docs/adr/ADR-005-kafka-eventing.md), EmbeddedKafka |
+| Aktive Cache-Invalidierung      |   ✅   | `article.events` → ES-Reindex + Evict    | schließt den Loop zu ADR-003 |
+| Analytics → PostgreSQL          |   ✅   | analytics-service (Node, kafkajs + pg)   | `search.events` → `search_analytics` |
 | Observability-Endpoint          |   ✅   | Actuator + `/actuator/prometheus`        | Grafana folgt |
-| Lokales Stack-Setup             |   ✅   | docker-compose (inkl. ElasticSearch)     | `--profile data` für Postgres |
+| Lokales Stack-Setup             |   ✅   | docker-compose (ES + Kafka + Postgres)   | ein Befehl |
 | CI-Pipeline                     |   ✅   | GitLab CI (5 Stages)                     | Coverage-Gate |
-| Kafka / OpenShift / Monitoring  |   🔜   | —                                        | Roadmap |
+| OpenShift / Monitoring          |   🔜   | —                                        | Roadmap |
 
 ## 🏗 Architektur
 
@@ -67,8 +70,8 @@ flowchart TD
 
     classDef done fill:#ecfdf5,stroke:#00a862,color:#0b1220;
     classDef soon fill:#f1f5f9,stroke:#94a3b8,color:#475569,stroke-dasharray:4 3;
-    class Nuxt,GW,ES done;
-    class Apache,Varnish,CMS,PG,Kafka,Analytics,Prom soon;
+    class Nuxt,GW,ES,Kafka,Analytics,PG done;
+    class Apache,Varnish,CMS,Prom soon;
 ```
 
 Grün = in dieser Iteration umgesetzt · gestrichelt = vorgesehen (Roadmap).
@@ -109,24 +112,27 @@ Strikte Testpyramide — Bulk an Unit-Tests, gezielte Integrationstests, wenige 
         ┌────────────────────┐
         │   E2E (Playwright) │   🔜 Roadmap
         ├────────────────────┤
-        │  Integrationstests │   GraphQlTester · Testcontainers (ES)
+        │  Integrationstests │   GraphQlTester · Testcontainers (ES) · EmbeddedKafka
         ├────────────────────┤
         │     Unit-Tests     │   JUnit 5 · Vitest  (Bulk)
         └────────────────────┘
 ```
 
-| Schicht     | Tooling                          | Umfang                         |
-|-------------|----------------------------------|--------------------------------|
-| Backend     | JUnit 5, Mockito, AssertJ        | 28 Unit-Tests                  |
-| Backend     | `GraphQlTester`, Testcontainers (echtes ES) | 8 Integrationstests |
-| Frontend    | Vitest, Vue Test Utils, happy-dom | 16 Tests (Komponenten + Service) |
+| Schicht           | Tooling                                         | Umfang                       |
+|-------------------|-------------------------------------------------|------------------------------|
+| Backend           | JUnit 5, Mockito, AssertJ                       | 41 Unit-Tests                |
+| Backend           | `GraphQlTester`, Testcontainers (ES), EmbeddedKafka | 11 Integrationstests     |
+| Frontend          | Vitest, Vue Test Utils, happy-dom               | 16 Tests                     |
+| analytics-service | Vitest (gemockt: kafkajs + pg)                  | 9 Tests                      |
 
 ```bash
-cd apps/api-gateway && ./mvnw verify              # Backend: Tests + JaCoCo-Gate (>=80%)
-cd apps/frontend    && npm run test:unit -- --run --coverage
+cd apps/api-gateway          && ./mvnw verify                        # Backend: Tests + JaCoCo-Gate
+cd apps/frontend             && npm run test:unit -- --run --coverage
+cd services/analytics-service && npm run test:unit -- --run --coverage
 ```
 
-Coverage aktuell: **Backend 98 %**, **Frontend 96 %**. Flaky-Test-Policy: [FLAKY-TESTS.md](FLAKY-TESTS.md).
+Coverage-Gate **≥ 80 %** in allen Modulen erzwungen (Frontend ~95 %, analytics-service 100 % der
+Logik-Schicht). Flaky-Test-Policy: [FLAKY-TESTS.md](FLAKY-TESTS.md).
 
 ## 🔁 CI/CD Pipeline
 
@@ -148,14 +154,16 @@ validate ─→ test ─→ build ─→ security ─→ deploy-staging ─→ d
 ```
 newscore/
 ├── apps/
-│   ├── api-gateway/        # Spring Boot 3 · GraphQL BFF (eigene README)
+│   ├── api-gateway/        # Spring Boot 3 · GraphQL BFF · ES · Kafka (eigene README)
 │   └── frontend/           # Nuxt 3 · urql · SSR (eigene README)
+├── services/
+│   └── analytics-service/  # Node/TS · Kafka → PostgreSQL (eigene README)
 ├── docs/
 │   ├── adr/                # Architecture Decision Records
 │   ├── defects/            # Defect-Template + Bugs
 │   └── images/banner.svg
 ├── .githooks/              # pre-commit · commit-msg · pre-push
-├── docker-compose.yml      # lokales Stack-Setup
+├── docker-compose.yml      # lokales Stack-Setup (ES + Kafka + Postgres)
 ├── .gitlab-ci.yml          # CI-Pipeline
 ├── CONTRIBUTING.md · FLAKY-TESTS.md · LICENSE
 └── README.md
@@ -175,12 +183,14 @@ Root Cause, Regressionstest).
 | [ADR-002](docs/adr/ADR-002-graphql-bff-pattern.md) | GraphQL-Gateway nach BFF-Pattern |
 | [ADR-003](docs/adr/ADR-003-caffeine-caching.md) | Caffeine als In-Process-Cache |
 | [ADR-004](docs/adr/ADR-004-elasticsearch-search.md) | ElasticSearch als Volltextsuche (Profil-gesteuert) |
+| [ADR-005](docs/adr/ADR-005-kafka-eventing.md) | Kafka-Eventing mit JSON-Serialisierung + DLQ |
 
 ## 🛣 Roadmap
 
 - ✅ **Volltextsuche:** ElasticSearch-`SearchService` (profil-gesteuert, Testcontainers) — erledigt
+- ✅ **Eventing (Epic 4):** Kafka-Producer/Consumer, DLQ, aktive Cache-Invalidierung, Analytics → Postgres — erledigt
 - **Epic 3 — Caching:** Varnish-VCL + Apache-Proxy, gezielte `PURGE`-Invalidierung
-- **Epic 4 — Eventing:** Kafka-Topics, Schema-Registry, DLQ — treibt ES-Indexierung + Postgres-Analytics
+- **Eventing-Ausbau:** Avro + Schema-Registry, `user.pageview`-Producer im Frontend
 - **Epic 5 — Plattform:** Helm-Chart, ArgoCD-Apps, HPA/PDB, NetworkPolicies (OpenShift)
 - **Epic 6 — Observability:** Grafana-Dashboards, Prometheus-Alerts, Loki, OpenTelemetry
 - **Datenanbindung:** Sophora-CMS-Resolver für die `*Service`-Interfaces
