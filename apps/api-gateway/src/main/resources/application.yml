@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: newscore-api-gateway
+  graphql:
+    # GraphiQL UI for local exploration at http://localhost:8080/graphiql
+    graphiql:
+      enabled: true
+    schema:
+      # Expose the SDL at /graphql/schema for tooling
+      printer:
+        enabled: true
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # Prometheus scrape endpoint at /actuator/prometheus (Epic 6)
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        # Kubernetes readiness/liveness probes (Epic 5)
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+logging:
+  level:
+    de.newscore: INFO

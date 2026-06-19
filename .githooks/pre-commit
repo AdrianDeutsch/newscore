@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "🔍 [pre-commit] Running linters..."
+
+# Frontend lint — only when frontend sources are staged and deps are installed
+if [ -d "apps/frontend/node_modules" ] && \
+   git diff --cached --name-only | grep -q "^apps/frontend/"; then
+  echo "  → ESLint (frontend)"
+  (cd apps/frontend && npm run lint)
+fi
+
+# Java checkstyle — only when api-gateway sources are staged
+if [ -f "apps/api-gateway/mvnw" ] && \
+   git diff --cached --name-only | grep -q "^apps/api-gateway/"; then
+  echo "  → Checkstyle (api-gateway)"
+  (cd apps/api-gateway && ./mvnw checkstyle:check -q)
+fi
+
+echo "✅ [pre-commit] All checks passed."

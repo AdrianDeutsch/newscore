@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Opt-out for fast emergency pushes: SKIP_TESTS=1 git push
+if [ "${SKIP_TESTS:-0}" = "1" ]; then
+  echo "⚠️  [pre-push] SKIP_TESTS=1 – Tests übersprungen."
+  exit 0
+fi
+
+echo "🧪 [pre-push] Running unit tests before push..."
+
+# API-Gateway unit tests
+if [ -f "apps/api-gateway/mvnw" ]; then
+  echo "  → Java unit tests"
+  (cd apps/api-gateway && ./mvnw test -q --no-transfer-progress)
+fi
+
+# Frontend unit tests
+if [ -d "apps/frontend/node_modules" ]; then
+  echo "  → Nuxt unit tests (vitest)"
+  (cd apps/frontend && npm run test:unit -- --run)
+fi
+
+echo "✅ [pre-push] All tests passed. Push allowed."

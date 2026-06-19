@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" role="img" aria-label="Kein Bild verfügbar">
+  <rect width="800" height="450" fill="#e2e8f0"/>
+  <g fill="none" stroke="#94a3b8" stroke-width="6" stroke-linejoin="round">
+    <rect x="296" y="156" width="208" height="150" rx="10"/>
+    <path d="M296 256l54-46 50 40 60-56 44 38" stroke-linecap="round"/>
+  </g>
+  <circle cx="356" cy="196" r="16" fill="#94a3b8"/>
+  <text x="400" y="360" text-anchor="middle" font-family="system-ui, sans-serif" font-size="26" fill="#64748b">
+    NewsCore
+  </text>
+</svg>

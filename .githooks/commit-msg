@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+COMMIT_MSG_FILE=$1
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# Conventional Commits: type(scope): subject  — scope optional, subject 1..100 chars
+PATTERN="^(feat|fix|perf|test|ci|docs|refactor|chore|style|build|revert)(\(.+\))?: .{1,100}"
+
+# Allow merge commits to bypass the convention check.
+if echo "$COMMIT_MSG" | grep -qE "^Merge "; then
+  exit 0
+fi
+
+if ! echo "$COMMIT_MSG" | grep -qE "$PATTERN"; then
+  echo ""
+  echo "❌ [commit-msg] Ungültiges Commit-Format!"
+  echo ""
+  echo "   Erwartet: type(scope): beschreibung"
+  echo "   Beispiel: feat(frontend): add article search (NC-42)"
+  echo ""
+  echo "   Typen: feat | fix | perf | test | ci | docs | refactor | chore | style | build | revert"
+  echo ""
+  exit 1
+fi
+
+echo "✅ [commit-msg] Commit-Format OK."

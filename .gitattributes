@@ -1,0 +1,17 @@
+# Normalization
+* text=auto eol=lf
+
+# Maven wrapper must stay executable / LF on all platforms
+mvnw text eol=lf
+*.cmd text eol=crlf
+
+# Binary files
+*.png binary
+*.gif binary
+*.jpg binary
+*.svg text eol=lf
+
+# Diff hints
+*.md diff=markdown
+*.java diff=java
+*.ts diff=typescript

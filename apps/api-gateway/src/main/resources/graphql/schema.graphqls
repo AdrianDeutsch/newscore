@@ -1,0 +1,55 @@
+"An ISO-8601 date-time, e.g. 2026-06-19T08:30:00Z."
+scalar DateTime
+
+"A published editorial article."
+type Article {
+    id: ID!
+    title: String!
+    teaser: String
+    body: String!
+    "Resolved via DataLoader (BatchMapping) to avoid N+1 queries."
+    author: Author!
+    "Resolved via DataLoader (BatchMapping) to avoid N+1 queries."
+    category: Category!
+    publishedAt: DateTime!
+    tags: [String!]!
+    imageUrl: String
+}
+
+"An editorial author."
+type Author {
+    id: ID!
+    name: String!
+    email: String
+    bio: String
+}
+
+"A content category / ressort."
+type Category {
+    id: ID!
+    name: String!
+    slug: String!
+}
+
+"A page of articles with cursor-less offset pagination metadata."
+type ArticleConnection {
+    nodes: [Article!]!
+    totalCount: Int!
+    hasNextPage: Boolean!
+}
+
+"Result of a full-text search over articles."
+type SearchResult {
+    query: String!
+    totalCount: Int!
+    results: [Article!]!
+}
+
+type Query {
+    "Single article by id, or null if it does not exist."
+    article(id: ID!): Article
+    "Paginated articles, optionally filtered by category slug."
+    articles(category: String, limit: Int = 20, offset: Int = 0): ArticleConnection!
+    "Full-text search over articles."
+    search(query: String!, limit: Int = 10): SearchResult!
+}
