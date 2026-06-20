@@ -196,6 +196,18 @@ services:
       - "3100:3100"
     networks: [newscore]
 
+  tempo:
+    image: grafana/tempo:2.6.0
+    profiles: [observability]
+    command:
+      - -config.file=/etc/tempo/tempo.yaml
+    volumes:
+      - ./infrastructure/tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
+    ports:
+      - "3200:3200"   # query API
+      - "4318:4318"   # OTLP HTTP (gateway exports traces here)
+    networks: [newscore]
+
   promtail:
     image: grafana/promtail:3.1.1
     profiles: [observability]

@@ -54,7 +54,7 @@
 | CI-Pipeline                     |   ✅   | GitLab CI (5 Stages)                     | Coverage-Gate |
 | K8s/OpenShift + GitOps          |   ✅   | Helm-Umbrella-Chart + ArgoCD             | [ADR-006](docs/adr/ADR-006-helm-argocd-gitops.md), HPA/PDB/NetworkPolicy |
 | Observability                   |   ✅   | Prometheus + Grafana + Loki              | [ADR-007](docs/adr/ADR-007-observability.md), Dashboards/Alerts/JSON-Logs |
-| Distributed Tracing             |   🔜   | OpenTelemetry + Tempo                    | Roadmap (MDC traceId/spanId vorbereitet) |
+| Distributed Tracing             |   ✅   | OpenTelemetry + Tempo (OTLP)             | [ADR-009](docs/adr/ADR-009-distributed-tracing.md), Trace↔Logs-Korrelation |
 
 ## 🏗 Architektur
 
@@ -198,6 +198,7 @@ Root Cause, Regressionstest).
 | [ADR-006](docs/adr/ADR-006-helm-argocd-gitops.md) | Helm-Umbrella-Chart + ArgoCD-GitOps |
 | [ADR-007](docs/adr/ADR-007-observability.md) | Observability mit Prometheus, Grafana und Loki |
 | [ADR-008](docs/adr/ADR-008-varnish-caching.md) | Varnish-Edge-Cache + Apache-Reverse-Proxy |
+| [ADR-009](docs/adr/ADR-009-distributed-tracing.md) | Distributed Tracing mit OpenTelemetry + Tempo |
 
 ## 🛣 Roadmap
 
@@ -206,7 +207,7 @@ Root Cause, Regressionstest).
 - ✅ **Plattform (Epic 5):** Helm-Umbrella-Chart, ArgoCD-Apps, HPA/PDB, NetworkPolicies (OpenShift) — erledigt
 - ✅ **Observability (Epic 6):** Prometheus-Scrape/Alerts, Grafana-Dashboards, JSON-Logs → Loki — erledigt
 - ✅ **Caching (Epic 3):** Varnish-VCL + Apache-Proxy, event-getriebenes `PURGE` — erledigt
-- **Tracing:** OpenTelemetry + Tempo (MDC `traceId`/`spanId` bereits in den Logs)
+- ✅ **Tracing:** OpenTelemetry + Tempo (OTLP), Trace↔Logs-Korrelation — erledigt
 - **Eventing-Ausbau:** Avro + Schema-Registry, `user.pageview`-Producer im Frontend
 - **Datenanbindung:** Sophora-CMS-Resolver für die `*Service`-Interfaces
 - **Frontend:** GraphQL-Codegen, Playwright-E2E, i18n, PWA
