@@ -48,7 +48,7 @@
 | Volltextsuche                   |   ✅   | ElasticSearch 8 (Profil-gesteuert)       | [ADR-004](docs/adr/ADR-004-elasticsearch-search.md), Testcontainers |
 | Event-Streaming                 |   ✅   | Kafka: Producer/Consumer + DLQ           | [ADR-005](docs/adr/ADR-005-kafka-eventing.md), EmbeddedKafka |
 | Aktive Cache-Invalidierung      |   ✅   | `article.events` → ES-Reindex + Evict    | schließt den Loop zu ADR-003 |
-| Analytics → PostgreSQL          |   ✅   | analytics-service (Node, kafkajs + pg)   | `search.events` → `search_analytics` |
+| Analytics → PostgreSQL          |   ✅   | analytics-service (Node, kafkajs + pg)   | `search.events` + `user.events` (Pageviews) → Postgres |
 | Observability-Endpoint          |   ✅   | Actuator + `/actuator/prometheus`        | Grafana folgt |
 | Lokales Stack-Setup             |   ✅   | docker-compose (ES + Kafka + Postgres)   | ein Befehl |
 | CI-Pipeline                     |   ✅   | GitLab CI (5 Stages)                     | Coverage-Gate |

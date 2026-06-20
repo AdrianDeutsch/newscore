@@ -7,21 +7,22 @@ schreibt (Epic 4). Polyglotter Consumer am selben JSON-Event-Bus — siehe
 ## 🔁 Datenfluss
 
 ```
-GraphQL search()  ──▶  newscore.search.events (Kafka)  ──▶  analytics-service  ──▶  PostgreSQL
-                          (JSON SearchExecutedEvent)         (kafkajs + pg)        search_analytics
+GraphQL search()  ──▶  newscore.search.events ──▶  analytics-service ──▶  search_analytics
+Frontend pageview ──▶  newscore.user.events   ──▶  (kafkajs + pg)    ──▶  page_view_analytics
 ```
 
 ## 🗂 Struktur
 
 ```
 src/
-├── config.ts               # Env-Konfiguration (Kafka + Postgres)
-├── types.ts                # SearchExecutedEvent (Spiegel des Gateway-Events)
-├── analyticsRepository.ts  # pg-Insert hinter Interface (testbar)
-├── searchEventHandler.ts   # reine Parse-/Validierungslogik (Unit-getestet)
-├── searchEventConsumer.ts  # kafkajs-Verdrahtung
-└── index.ts                # Entry-Point (Pool + Consumer + Graceful Shutdown)
-sql/init.sql                # Tabelle search_analytics
+├── config.ts                # Env-Konfiguration (Kafka-Topics + Postgres)
+├── types.ts                 # SearchExecutedEvent / PageViewEvent (Spiegel der Gateway-Events)
+├── analyticsRepository.ts   # pg-Inserts hinter Interface (testbar)
+├── searchEventHandler.ts    # reine Parse-/Validierungslogik Suche (Unit-getestet)
+├── pageViewEventHandler.ts  # reine Parse-/Validierungslogik Pageview (Unit-getestet)
+├── eventConsumer.ts         # kafkajs-Verdrahtung (beide Topics, Dispatch nach Topic)
+└── index.ts                 # Entry-Point (Pool + Consumer + Graceful Shutdown)
+sql/init.sql                 # Tabellen search_analytics + page_view_analytics
 ```
 
 ## 🚀 Nutzung
@@ -36,7 +37,8 @@ Konfiguration über Umgebungsvariablen (Defaults für lokal):
 | Variable        | Default                    |
 |-----------------|----------------------------|
 | `KAFKA_BROKERS` | `localhost:9092`           |
-| `KAFKA_TOPIC`   | `newscore.search.events`   |
+| `KAFKA_SEARCH_TOPIC` | `newscore.search.events` |
+| `KAFKA_PAGEVIEW_TOPIC` | `newscore.user.events` |
 | `KAFKA_GROUP_ID`| `analytics-service`        |
 | `PGHOST`        | `localhost`                |
 | `PGPORT`        | `5432`                     |

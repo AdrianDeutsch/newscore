@@ -22,4 +22,11 @@ public interface EventPublisher {
      * @param event the event to publish
      */
     void publishSearchExecuted(SearchExecutedEvent event);
+
+    /**
+     * Publishes a page-view analytics event.
+     *
+     * @param event the event to publish
+     */
+    void publishPageView(PageViewEvent event);
 }

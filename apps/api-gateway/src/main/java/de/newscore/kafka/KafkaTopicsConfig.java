@@ -32,4 +32,9 @@ public class KafkaTopicsConfig {
     public NewTopic searchEventsTopic() {
         return TopicBuilder.name(KafkaTopics.SEARCH_EVENTS).partitions(PARTITIONS).replicas(REPLICAS).build();
     }
+
+    @Bean
+    public NewTopic userEventsTopic() {
+        return TopicBuilder.name(KafkaTopics.USER_EVENTS).partitions(PARTITIONS).replicas(REPLICAS).build();
+    }
 }

@@ -27,4 +27,9 @@ public class KafkaEventPublisher implements EventPublisher {
     public void publishSearchExecuted(SearchExecutedEvent event) {
         kafkaTemplate.send(KafkaTopics.SEARCH_EVENTS, event);
     }
+
+    @Override
+    public void publishPageView(PageViewEvent event) {
+        kafkaTemplate.send(KafkaTopics.USER_EVENTS, event);
+    }
 }

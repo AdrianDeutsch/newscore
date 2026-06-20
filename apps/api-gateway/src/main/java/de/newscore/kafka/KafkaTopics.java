@@ -15,6 +15,9 @@ public final class KafkaTopics {
     /** Search analytics events, consumed by the analytics-service. */
     public static final String SEARCH_EVENTS = "newscore.search.events";
 
+    /** User page-view events (produced by the frontend), consumed by the analytics-service. */
+    public static final String USER_EVENTS = "newscore.user.events";
+
     private KafkaTopics() {
     }
 }

@@ -12,6 +12,8 @@ export default defineNuxtConfig({
     graphqlEndpoint: 'http://localhost:8080/graphql',
     public: {
       graphqlEndpoint: 'http://localhost:8080/graphql',
+      // Page-view beacon target (api-gateway REST endpoint). Override with NUXT_PUBLIC_PAGEVIEW_ENDPOINT.
+      pageviewEndpoint: 'http://localhost:8080/events/pageview',
     },
   },
 

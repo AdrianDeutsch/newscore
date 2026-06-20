@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import de.newscore.kafka.ArticleEvent;
 import de.newscore.kafka.ArticleEventType;
 import de.newscore.kafka.NoOpEventPublisher;
+import de.newscore.kafka.PageViewEvent;
 import de.newscore.kafka.SearchExecutedEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,6 +20,7 @@ class NoOpEventPublisherTest {
         assertThatCode(() -> {
             publisher.publishArticleEvent(ArticleEvent.of(ArticleEventType.PUBLISHED, "1"));
             publisher.publishSearchExecuted(SearchExecutedEvent.of("klima", 0));
+            publisher.publishPageView(PageViewEvent.of("/"));
         }).doesNotThrowAnyException();
     }
 }

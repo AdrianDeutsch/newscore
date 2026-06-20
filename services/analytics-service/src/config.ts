@@ -4,7 +4,8 @@
  */
 export interface AnalyticsConfig {
   kafkaBrokers: string[]
-  kafkaTopic: string
+  kafkaSearchTopic: string
+  kafkaPageViewTopic: string
   kafkaGroupId: string
   postgres: {
     host: string
@@ -23,7 +24,8 @@ export interface AnalyticsConfig {
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AnalyticsConfig {
   return {
     kafkaBrokers: (env.KAFKA_BROKERS ?? 'localhost:9092').split(',').map((broker) => broker.trim()),
-    kafkaTopic: env.KAFKA_TOPIC ?? 'newscore.search.events',
+    kafkaSearchTopic: env.KAFKA_SEARCH_TOPIC ?? 'newscore.search.events',
+    kafkaPageViewTopic: env.KAFKA_PAGEVIEW_TOPIC ?? 'newscore.user.events',
     kafkaGroupId: env.KAFKA_GROUP_ID ?? 'analytics-service',
     postgres: {
       host: env.PGHOST ?? 'localhost',

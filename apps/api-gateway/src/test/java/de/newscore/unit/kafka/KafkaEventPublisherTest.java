@@ -6,6 +6,7 @@ import de.newscore.kafka.ArticleEvent;
 import de.newscore.kafka.ArticleEventType;
 import de.newscore.kafka.KafkaEventPublisher;
 import de.newscore.kafka.KafkaTopics;
+import de.newscore.kafka.PageViewEvent;
 import de.newscore.kafka.SearchExecutedEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,5 +42,15 @@ class KafkaEventPublisherTest {
         publisher.publishSearchExecuted(event);
 
         verify(kafkaTemplate).send(KafkaTopics.SEARCH_EVENTS, event);
+    }
+
+    @Test
+    @DisplayName("page-view events go to the user topic")
+    void publishPageView_sendsToUserTopic() {
+        PageViewEvent event = PageViewEvent.of("/article/1");
+
+        publisher.publishPageView(event);
+
+        verify(kafkaTemplate).send(KafkaTopics.USER_EVENTS, event);
     }
 }

@@ -24,4 +24,9 @@ public class NoOpEventPublisher implements EventPublisher {
     public void publishSearchExecuted(SearchExecutedEvent event) {
         log.debug("Event bus disabled — dropping search event {}", event);
     }
+
+    @Override
+    public void publishPageView(PageViewEvent event) {
+        log.debug("Event bus disabled — dropping page-view event {}", event);
+    }
 }

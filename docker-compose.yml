@@ -106,7 +106,8 @@ services:
     image: newscore/analytics-service:dev
     environment:
       KAFKA_BROKERS: kafka:9092
-      KAFKA_TOPIC: newscore.search.events
+      KAFKA_SEARCH_TOPIC: newscore.search.events
+      KAFKA_PAGEVIEW_TOPIC: newscore.user.events
       PGHOST: postgres
       PGPORT: "5432"
       PGUSER: newscore
@@ -130,6 +131,7 @@ services:
       # SSR resolves the gateway via the internal service name; the browser uses the published port.
       NUXT_GRAPHQL_ENDPOINT: http://api-gateway:8080/graphql
       NUXT_PUBLIC_GRAPHQL_ENDPOINT: http://localhost:8080/graphql
+      NUXT_PUBLIC_PAGEVIEW_ENDPOINT: http://localhost:8080/events/pageview
     depends_on:
       api-gateway:
         condition: service_healthy

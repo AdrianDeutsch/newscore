@@ -1,18 +1,20 @@
 import { Pool } from 'pg'
 import { createAnalyticsRepository } from './analyticsRepository'
 import { loadConfig } from './config'
-import { startSearchEventConsumer } from './searchEventConsumer'
+import { startEventConsumer } from './eventConsumer'
 
 /**
- * Wires PostgreSQL + Kafka and starts consuming search analytics events.
+ * Wires PostgreSQL + Kafka and starts consuming search and page-view analytics events.
  */
 async function main(): Promise<void> {
   const config = loadConfig()
   const pool = new Pool(config.postgres)
   const repository = createAnalyticsRepository(pool)
 
-  const stop = await startSearchEventConsumer(config, repository)
-  console.log(`analytics-service: consuming "${config.kafkaTopic}" -> PostgreSQL`)
+  const stop = await startEventConsumer(config, repository)
+  console.log(
+    `analytics-service: consuming "${config.kafkaSearchTopic}" + "${config.kafkaPageViewTopic}" -> PostgreSQL`,
+  )
 
   const shutdown = async (): Promise<void> => {
     console.log('analytics-service: shutting down')

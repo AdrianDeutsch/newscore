@@ -11,7 +11,12 @@ export default defineConfig({
       reporter: ['text', 'html', 'cobertura'],
       reportsDirectory: 'coverage',
       // Pure logic units; the Kafka/pg wiring (consumer, index) is integration-level.
-      include: ['src/searchEventHandler.ts', 'src/config.ts', 'src/analyticsRepository.ts'],
+      include: [
+        'src/searchEventHandler.ts',
+        'src/pageViewEventHandler.ts',
+        'src/config.ts',
+        'src/analyticsRepository.ts',
+      ],
       thresholds: { lines: 80, functions: 80, statements: 80, branches: 70 },
     },
   },

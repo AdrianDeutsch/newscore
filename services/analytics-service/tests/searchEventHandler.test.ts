@@ -5,6 +5,7 @@ import { handleSearchEvent } from '../src/searchEventHandler'
 function createRepository() {
   return {
     insertSearchEvent: vi.fn().mockResolvedValue(undefined),
+    insertPageView: vi.fn().mockResolvedValue(undefined),
     close: vi.fn().mockResolvedValue(undefined),
   } satisfies AnalyticsRepository & { insertSearchEvent: ReturnType<typeof vi.fn> }
 }
