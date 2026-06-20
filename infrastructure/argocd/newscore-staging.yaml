@@ -1,0 +1,34 @@
+# GitOps: ArgoCD watches the develop branch and auto-syncs the staging release.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: newscore-staging
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://gitlab.example.com/newscore/newscore.git
+    targetRevision: develop
+    path: infrastructure/helm/newscore
+    helm:
+      releaseName: newscore
+      valueFiles:
+        - values.yaml
+        - values-staging.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: newscore-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 2m

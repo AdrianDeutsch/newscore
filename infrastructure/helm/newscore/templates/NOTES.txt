@@ -1,0 +1,16 @@
+NewsCore ({{ .Values.global.environment }}) has been deployed as release "{{ .Release.Name }}".
+
+Components:
+{{- range $name, $component := .Values.components }}
+  - {{ $name }}: image {{ $.Values.global.imageRegistry }}/{{ $component.image.repository }}:{{ $component.image.tag | default $.Values.global.imageTag }}
+    autoscaling: {{ if $component.autoscaling.enabled }}{{ $component.autoscaling.minReplicas }}-{{ $component.autoscaling.maxReplicas }} replicas{{ else }}fixed {{ $component.replicas }}{{ end }}
+{{- end }}
+
+{{- if .Values.ingress.enabled }}
+
+The frontend is reachable at: http{{ if .Values.ingress.tls.enabled }}s{{ end }}://{{ .Values.ingress.host }}
+{{- end }}
+
+Check rollout status:
+  kubectl -n {{ .Release.Namespace }} rollout status deployment/{{ .Release.Name }}-frontend
+  kubectl -n {{ .Release.Namespace }} get hpa,pdb,networkpolicy

@@ -1,0 +1,28 @@
+{{- range $name, $component := .Values.components }}
+{{- if $component.autoscaling.enabled }}
+{{- $ctx := dict "root" $ "name" $name }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "newscore.componentName" $ctx }}
+  labels:
+    {{- include "newscore.labels" $ | nindent 4 }}
+    {{- include "newscore.selectorLabels" $ctx | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "newscore.componentName" $ctx }}
+  minReplicas: {{ $component.autoscaling.minReplicas }}
+  maxReplicas: {{ $component.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $component.autoscaling.targetCPUUtilizationPercentage }}
+{{- end }}
+{{- end }}

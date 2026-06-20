@@ -1,0 +1,21 @@
+{{- range $name, $component := .Values.components }}
+{{- $ctx := dict "root" $ "name" $name }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "newscore.componentName" $ctx }}
+  labels:
+    {{- include "newscore.labels" $ | nindent 4 }}
+    {{- include "newscore.selectorLabels" $ctx | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "newscore.selectorLabels" $ctx | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ $component.port }}
+      targetPort: http
+      protocol: TCP
+{{- end }}

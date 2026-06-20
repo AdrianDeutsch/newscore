@@ -51,7 +51,8 @@
 | Observability-Endpoint          |   ✅   | Actuator + `/actuator/prometheus`        | Grafana folgt |
 | Lokales Stack-Setup             |   ✅   | docker-compose (ES + Kafka + Postgres)   | ein Befehl |
 | CI-Pipeline                     |   ✅   | GitLab CI (5 Stages)                     | Coverage-Gate |
-| OpenShift / Monitoring          |   🔜   | —                                        | Roadmap |
+| K8s/OpenShift + GitOps          |   ✅   | Helm-Umbrella-Chart + ArgoCD             | [ADR-006](docs/adr/ADR-006-helm-argocd-gitops.md), HPA/PDB/NetworkPolicy |
+| Monitoring                      |   🔜   | —                                        | Roadmap |
 
 ## 🏗 Architektur
 
@@ -158,6 +159,9 @@ newscore/
 │   └── frontend/           # Nuxt 3 · urql · SSR (eigene README)
 ├── services/
 │   └── analytics-service/  # Node/TS · Kafka → PostgreSQL (eigene README)
+├── infrastructure/
+│   ├── helm/newscore/      # Umbrella-Chart (Deploy/Svc/HPA/PDB/Ingress/NetworkPolicy)
+│   └── argocd/             # ArgoCD Application-Manifeste (staging/prod)
 ├── docs/
 │   ├── adr/                # Architecture Decision Records
 │   ├── defects/            # Defect-Template + Bugs
@@ -184,15 +188,16 @@ Root Cause, Regressionstest).
 | [ADR-003](docs/adr/ADR-003-caffeine-caching.md) | Caffeine als In-Process-Cache |
 | [ADR-004](docs/adr/ADR-004-elasticsearch-search.md) | ElasticSearch als Volltextsuche (Profil-gesteuert) |
 | [ADR-005](docs/adr/ADR-005-kafka-eventing.md) | Kafka-Eventing mit JSON-Serialisierung + DLQ |
+| [ADR-006](docs/adr/ADR-006-helm-argocd-gitops.md) | Helm-Umbrella-Chart + ArgoCD-GitOps |
 
 ## 🛣 Roadmap
 
 - ✅ **Volltextsuche:** ElasticSearch-`SearchService` (profil-gesteuert, Testcontainers) — erledigt
 - ✅ **Eventing (Epic 4):** Kafka-Producer/Consumer, DLQ, aktive Cache-Invalidierung, Analytics → Postgres — erledigt
+- ✅ **Plattform (Epic 5):** Helm-Umbrella-Chart, ArgoCD-Apps, HPA/PDB, NetworkPolicies (OpenShift) — erledigt
+- **Epic 6 — Observability:** Grafana-Dashboards, Prometheus-Alerts, Loki, OpenTelemetry
 - **Epic 3 — Caching:** Varnish-VCL + Apache-Proxy, gezielte `PURGE`-Invalidierung
 - **Eventing-Ausbau:** Avro + Schema-Registry, `user.pageview`-Producer im Frontend
-- **Epic 5 — Plattform:** Helm-Chart, ArgoCD-Apps, HPA/PDB, NetworkPolicies (OpenShift)
-- **Epic 6 — Observability:** Grafana-Dashboards, Prometheus-Alerts, Loki, OpenTelemetry
 - **Datenanbindung:** Sophora-CMS-Resolver für die `*Service`-Interfaces
 - **Frontend:** GraphQL-Codegen, Playwright-E2E, i18n, PWA
 

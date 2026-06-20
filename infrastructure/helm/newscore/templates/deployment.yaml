@@ -1,0 +1,63 @@
+{{- range $name, $component := .Values.components }}
+{{- $ctx := dict "root" $ "name" $name }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "newscore.componentName" $ctx }}
+  labels:
+    {{- include "newscore.labels" $ | nindent 4 }}
+    {{- include "newscore.selectorLabels" $ctx | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}
+spec:
+  {{- if not $component.autoscaling.enabled }}
+  replicas: {{ $component.replicas }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "newscore.selectorLabels" $ctx | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "newscore.labels" $ | nindent 8 }}
+        {{- include "newscore.selectorLabels" $ctx | nindent 8 }}
+        app.kubernetes.io/component: {{ $name }}
+    spec:
+      serviceAccountName: {{ include "newscore.serviceAccountName" $ }}
+      securityContext:
+        {{- toYaml $.Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ $name }}
+          image: "{{ $.Values.global.imageRegistry }}/{{ $component.image.repository }}:{{ $component.image.tag | default $.Values.global.imageTag }}"
+          imagePullPolicy: {{ $.Values.global.imagePullPolicy }}
+          securityContext:
+            {{- toYaml $.Values.containerSecurityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: {{ $component.port }}
+          envFrom:
+            {{- if $component.env }}
+            - configMapRef:
+                name: {{ include "newscore.componentName" $ctx }}-config
+            {{- end }}
+            {{- if $.Values.secrets.create }}
+            - secretRef:
+                name: {{ $.Release.Name }}-secrets
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: {{ $component.probes.readinessPath }}
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: {{ $component.probes.livenessPath }}
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            {{- toYaml $component.resources | nindent 12 }}
+{{- end }}

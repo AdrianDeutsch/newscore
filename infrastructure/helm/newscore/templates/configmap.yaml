@@ -1,0 +1,18 @@
+{{- range $name, $component := .Values.components }}
+{{- if $component.env }}
+{{- $ctx := dict "root" $ "name" $name }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "newscore.componentName" $ctx }}-config
+  labels:
+    {{- include "newscore.labels" $ | nindent 4 }}
+    {{- include "newscore.selectorLabels" $ctx | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}
+data:
+  {{- range $key, $value := $component.env }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+{{- end }}
+{{- end }}

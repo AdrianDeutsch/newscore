@@ -1,0 +1,35 @@
+# Production overrides (synced manually by ArgoCD from the main branch).
+
+global:
+  environment: prod
+  imageTag: stable
+
+ingress:
+  host: newscore.example.com
+  tls:
+    secretName: newscore-prod-tls
+
+components:
+  api-gateway:
+    replicas: 3
+    resources:
+      requests:
+        cpu: 500m
+        memory: 768Mi
+      limits:
+        cpu: "2"
+        memory: 1Gi
+    autoscaling:
+      minReplicas: 3
+      maxReplicas: 10
+    pdb:
+      minAvailable: 2
+  frontend:
+    replicas: 3
+    env:
+      NUXT_PUBLIC_GRAPHQL_ENDPOINT: "https://newscore.example.com/graphql"
+    autoscaling:
+      minReplicas: 3
+      maxReplicas: 12
+    pdb:
+      minAvailable: 2

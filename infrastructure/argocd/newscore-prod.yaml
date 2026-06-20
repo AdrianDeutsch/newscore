@@ -1,0 +1,27 @@
+# GitOps: ArgoCD tracks the main branch for production. No automated sync — promotion to prod is a
+# manual gate (sync triggered by an operator / the deploy:prod CI job), matching .gitlab-ci.yml.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: newscore-prod
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://gitlab.example.com/newscore/newscore.git
+    targetRevision: main
+    path: infrastructure/helm/newscore
+    helm:
+      releaseName: newscore
+      valueFiles:
+        - values.yaml
+        - values-prod.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: newscore-prod
+  syncPolicy:
+    # Intentionally no "automated:" block — production syncs are manual.
+    syncOptions:
+      - CreateNamespace=true

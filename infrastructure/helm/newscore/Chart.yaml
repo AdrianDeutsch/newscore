@@ -1,0 +1,13 @@
+apiVersion: v2
+name: newscore
+description: NewsCore — GraphQL BFF gateway + Nuxt 3 SSR frontend (umbrella chart)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - newscore
+  - graphql
+  - nuxt
+  - openshift
+maintainers:
+  - name: NewsCore Team

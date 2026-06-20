@@ -1,0 +1,22 @@
+# Staging overrides (synced automatically by ArgoCD from the develop branch).
+
+global:
+  environment: staging
+  imageTag: staging
+
+ingress:
+  host: newscore.staging.example.com
+  tls:
+    secretName: newscore-staging-tls
+
+components:
+  api-gateway:
+    replicas: 2
+    autoscaling:
+      maxReplicas: 4
+  frontend:
+    replicas: 2
+    env:
+      NUXT_PUBLIC_GRAPHQL_ENDPOINT: "https://newscore.staging.example.com/graphql"
+    autoscaling:
+      maxReplicas: 4
