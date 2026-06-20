@@ -2,13 +2,15 @@
 <!--
   Logging configuration for the API gateway.
 
-  The default profile uses a human-readable console pattern. Structured JSON logging for Loki
-  aggregation (Epic 6) is wired through the "json" profile; it currently reuses Spring Boot's
-  console encoder and is the seam where a JSON encoder (e.g. logstash-logback-encoder) will be
-  added in the observability iteration.
+  Default profile: human-readable console pattern.
+  "json" profile (used in the cluster, see ADR-007): one JSON object per line via
+  logstash-logback-encoder, including the application name and any MDC fields, so Promtail/Loki
+  can ingest structured logs.
 -->
 <configuration>
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <springProperty scope="context" name="appName" source="spring.application.name"/>
 
     <springProfile name="!json">
         <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
@@ -23,8 +25,10 @@
 
     <springProfile name="json">
         <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
-            <encoder>
-                <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level [%thread] %logger - %msg%n</pattern>
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <includeMdcKeyName>traceId</includeMdcKeyName>
+                <includeMdcKeyName>spanId</includeMdcKeyName>
+                <customFields>{"application":"${appName}"}</customFields>
             </encoder>
         </appender>
         <root level="INFO">

@@ -60,8 +60,26 @@ kubectl apply -f infrastructure/argocd/newscore-staging.yaml
 kubectl apply -f infrastructure/argocd/newscore-prod.yaml
 ```
 
+## 📊 Observability (Epic 6)
+
+```
+infrastructure/
+├── prometheus/   # prometheus.yml (Scrape) + rules.yml (Alerts)
+├── grafana/      # provisioning/ (Datasources) + dashboards/ (API Overview)
+└── loki/         # promtail-config.yml (Log-Aggregation)
+```
+
+- **Metriken:** Gateway-`/actuator/prometheus` (mit Histogram-Buckets) → Prometheus.
+  Im Cluster via `ServiceMonitor` (`monitoring.enabled=true`), lokal via Prometheus-Container.
+- **Alerts:** `rules.yml` bzw. `PrometheusRule` (P95-Latenz, 5xx-Rate, Kafka-Lag, Heap, Down).
+- **Dashboards:** Grafana lädt Datasources + Dashboard deklarativ (Provisioning).
+- **Logs:** Gateway schreibt unter dem `json`-Profil strukturierte JSON-Logs → Promtail → Loki.
+
+Lokal: `docker compose --profile observability up` (Grafana auf <http://localhost:3001>,
+Prometheus auf <http://localhost:9090>). Details: [ADR-007](../docs/adr/ADR-007-observability.md).
+
 ## 🛣 Roadmap
 
 - ES/Kafka/Postgres als eigene Charts/Operatoren (hier als bestehende Services vorausgesetzt)
 - Sealed-Secrets / Vault-Integration statt Platzhalter-Secret
-- ServiceMonitor (Prometheus-Operator) + Grafana-Dashboards (Epic 6)
+- OpenTelemetry + Tempo (verteiltes Tracing)

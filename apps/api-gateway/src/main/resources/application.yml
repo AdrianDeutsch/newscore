@@ -32,6 +32,12 @@ management:
   metrics:
     tags:
       application: ${spring.application.name}
+    distribution:
+      # Publish histogram buckets so Prometheus can compute P50/P95/P99 via histogram_quantile.
+      percentiles-histogram:
+        http.server.requests: true
+      slo:
+        http.server.requests: 100ms,200ms,500ms
 
 logging:
   level:

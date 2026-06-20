@@ -52,7 +52,8 @@
 | Lokales Stack-Setup             |   ✅   | docker-compose (ES + Kafka + Postgres)   | ein Befehl |
 | CI-Pipeline                     |   ✅   | GitLab CI (5 Stages)                     | Coverage-Gate |
 | K8s/OpenShift + GitOps          |   ✅   | Helm-Umbrella-Chart + ArgoCD             | [ADR-006](docs/adr/ADR-006-helm-argocd-gitops.md), HPA/PDB/NetworkPolicy |
-| Monitoring                      |   🔜   | —                                        | Roadmap |
+| Observability                   |   ✅   | Prometheus + Grafana + Loki              | [ADR-007](docs/adr/ADR-007-observability.md), Dashboards/Alerts/JSON-Logs |
+| Distributed Tracing             |   🔜   | OpenTelemetry + Tempo                    | Roadmap (MDC traceId/spanId vorbereitet) |
 
 ## 🏗 Architektur
 
@@ -71,8 +72,8 @@ flowchart TD
 
     classDef done fill:#ecfdf5,stroke:#00a862,color:#0b1220;
     classDef soon fill:#f1f5f9,stroke:#94a3b8,color:#475569,stroke-dasharray:4 3;
-    class Nuxt,GW,ES,Kafka,Analytics,PG done;
-    class Apache,Varnish,CMS,Prom soon;
+    class Nuxt,GW,ES,Kafka,Analytics,PG,Prom done;
+    class Apache,Varnish,CMS soon;
 ```
 
 Grün = in dieser Iteration umgesetzt · gestrichelt = vorgesehen (Roadmap).
@@ -160,8 +161,11 @@ newscore/
 ├── services/
 │   └── analytics-service/  # Node/TS · Kafka → PostgreSQL (eigene README)
 ├── infrastructure/
-│   ├── helm/newscore/      # Umbrella-Chart (Deploy/Svc/HPA/PDB/Ingress/NetworkPolicy)
-│   └── argocd/             # ArgoCD Application-Manifeste (staging/prod)
+│   ├── helm/newscore/      # Umbrella-Chart (Deploy/Svc/HPA/PDB/Ingress/NetworkPolicy/ServiceMonitor)
+│   ├── argocd/             # ArgoCD Application-Manifeste (staging/prod)
+│   ├── prometheus/         # Scrape-Config + Alert-Rules
+│   ├── grafana/            # Provisioning (Datasources) + Dashboards
+│   └── loki/               # Promtail-Config (Log-Aggregation)
 ├── docs/
 │   ├── adr/                # Architecture Decision Records
 │   ├── defects/            # Defect-Template + Bugs
@@ -189,14 +193,16 @@ Root Cause, Regressionstest).
 | [ADR-004](docs/adr/ADR-004-elasticsearch-search.md) | ElasticSearch als Volltextsuche (Profil-gesteuert) |
 | [ADR-005](docs/adr/ADR-005-kafka-eventing.md) | Kafka-Eventing mit JSON-Serialisierung + DLQ |
 | [ADR-006](docs/adr/ADR-006-helm-argocd-gitops.md) | Helm-Umbrella-Chart + ArgoCD-GitOps |
+| [ADR-007](docs/adr/ADR-007-observability.md) | Observability mit Prometheus, Grafana und Loki |
 
 ## 🛣 Roadmap
 
 - ✅ **Volltextsuche:** ElasticSearch-`SearchService` (profil-gesteuert, Testcontainers) — erledigt
 - ✅ **Eventing (Epic 4):** Kafka-Producer/Consumer, DLQ, aktive Cache-Invalidierung, Analytics → Postgres — erledigt
 - ✅ **Plattform (Epic 5):** Helm-Umbrella-Chart, ArgoCD-Apps, HPA/PDB, NetworkPolicies (OpenShift) — erledigt
-- **Epic 6 — Observability:** Grafana-Dashboards, Prometheus-Alerts, Loki, OpenTelemetry
+- ✅ **Observability (Epic 6):** Prometheus-Scrape/Alerts, Grafana-Dashboards, JSON-Logs → Loki — erledigt
 - **Epic 3 — Caching:** Varnish-VCL + Apache-Proxy, gezielte `PURGE`-Invalidierung
+- **Tracing:** OpenTelemetry + Tempo (MDC `traceId`/`spanId` bereits in den Logs)
 - **Eventing-Ausbau:** Avro + Schema-Registry, `user.pageview`-Producer im Frontend
 - **Datenanbindung:** Sophora-CMS-Resolver für die `*Service`-Interfaces
 - **Frontend:** GraphQL-Codegen, Playwright-E2E, i18n, PWA
