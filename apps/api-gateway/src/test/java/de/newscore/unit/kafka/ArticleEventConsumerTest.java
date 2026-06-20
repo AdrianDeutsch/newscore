@@ -6,6 +6,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import de.newscore.cache.CachePurger;
 import de.newscore.kafka.ArticleEvent;
 import de.newscore.kafka.ArticleEventConsumer;
 import de.newscore.kafka.ArticleEventType;
@@ -30,9 +31,11 @@ class ArticleEventConsumerTest {
     private ArticleIndexer indexer;
     @Mock
     private Cache cache;
+    @Mock
+    private CachePurger cachePurger;
 
     private ArticleEventConsumer consumer() {
-        return new ArticleEventConsumer(cacheManager, indexerProvider);
+        return new ArticleEventConsumer(cacheManager, indexerProvider, cachePurger);
     }
 
     @Test
@@ -45,6 +48,8 @@ class ArticleEventConsumerTest {
         consumer().onArticleEvent(ArticleEvent.of(ArticleEventType.PUBLISHED, "1"));
 
         verify(cache, atLeastOnce()).clear();
+        verify(cachePurger).purgeArticle("1");
+        verify(cachePurger).purgeHomepage();
         verify(indexer).indexOne("1");
     }
 

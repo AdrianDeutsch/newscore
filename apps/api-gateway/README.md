@@ -15,7 +15,7 @@ Aggregiert redaktionelle Inhalte und liefert sie typsicher an das Nuxt-Frontend.
 | Caching              | Caffeine via `@Cacheable` (`article`, `articles`)                     |
 | Volltextsuche        | ElasticSearch (Profil `elasticsearch`), In-Memory als Default ([ADR-004](../../docs/adr/ADR-004-elasticsearch-search.md)) |
 | Event-Streaming      | Kafka (Profil `kafka`): `search.executed`-Producer, `article.*`-Consumer, DLQ ([ADR-005](../../docs/adr/ADR-005-kafka-eventing.md)) |
-| Aktive Invalidierung | `article.events` → ES-Reindex + Cache-Evict; CMS-Simulator `POST /internal/cms/articles/{id}/publish` |
+| Aktive Invalidierung | `article.events` → ES-Reindex + Caffeine-Evict + Varnish-`PURGE` ([ADR-008](../../docs/adr/ADR-008-varnish-caching.md)); CMS-Simulator `POST /internal/cms/articles/{id}/publish` |
 | Datenquelle          | austauschbar — `*Service`-Interfaces; Mock heute, Sophora später      |
 | Observability        | Actuator + `/actuator/prometheus` (Histogram-Buckets); JSON-Logs im `json`-Profil ([ADR-007](../../docs/adr/ADR-007-observability.md)) |
 | Custom Scalar        | `DateTime` (→ `java.time.OffsetDateTime`)                             |

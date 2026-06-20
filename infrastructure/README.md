@@ -78,6 +78,21 @@ infrastructure/
 Lokal: `docker compose --profile observability up` (Grafana auf <http://localhost:3001>,
 Prometheus auf <http://localhost:9090>). Details: [ADR-007](../docs/adr/ADR-007-observability.md).
 
+## ⚡ Caching-Edge (Epic 3)
+
+```
+infrastructure/
+├── varnish/default.vcl   # TTLs (Assets 24h, Artikel 5m, Start 1m), PURGE-ACL, X-Cache
+└── apache/               # Reverse-Proxy: TLS, gzip, Security-Header, Rate-Limit
+```
+
+Pfad: **Client → Apache (`:8088`) → Varnish → frontend**. Event-getriebene Invalidierung: der
+Gateway-Consumer sendet bei `article.*`-Events `PURGE` an Varnish (siehe
+[ADR-008](../docs/adr/ADR-008-varnish-caching.md)).
+
+Lokal: `docker compose --profile edge up` → `curl -I http://localhost:8088/` zeigt `X-Cache`
+(MISS→HIT) und die Security-Header.
+
 ## 🛣 Roadmap
 
 - ES/Kafka/Postgres als eigene Charts/Operatoren (hier als bestehende Services vorausgesetzt)

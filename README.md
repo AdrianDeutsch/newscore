@@ -44,6 +44,7 @@
 | Application-Cache               |   ✅   | Caffeine (`@Cacheable`)                  | [ADR-003](docs/adr/ADR-003-caffeine-caching.md) |
 | SSR-Frontend                    |   ✅   | Nuxt 3, Vue 3, TypeScript                | `useAsyncData` |
 | GraphQL-Client                  |   ✅   | urql (`ssrExchange`)                     | [ADR-001](docs/adr/ADR-001-graphql-client-urql.md) |
+| Edge-Caching                    |   ✅   | Varnish (VCL) + Apache (TLS/gzip/Header) | [ADR-008](docs/adr/ADR-008-varnish-caching.md), event-getriebenes PURGE |
 | Volltextsuche                   |   ✅   | ElasticSearch 8 (Profil-gesteuert)       | [ADR-004](docs/adr/ADR-004-elasticsearch-search.md), Testcontainers |
 | Event-Streaming                 |   ✅   | Kafka: Producer/Consumer + DLQ           | [ADR-005](docs/adr/ADR-005-kafka-eventing.md), EmbeddedKafka |
 | Aktive Cache-Invalidierung      |   ✅   | `article.events` → ES-Reindex + Evict    | schließt den Loop zu ADR-003 |
@@ -72,8 +73,8 @@ flowchart TD
 
     classDef done fill:#ecfdf5,stroke:#00a862,color:#0b1220;
     classDef soon fill:#f1f5f9,stroke:#94a3b8,color:#475569,stroke-dasharray:4 3;
-    class Nuxt,GW,ES,Kafka,Analytics,PG,Prom done;
-    class Apache,Varnish,CMS soon;
+    class Nuxt,GW,ES,Kafka,Analytics,PG,Prom,Apache,Varnish done;
+    class CMS soon;
 ```
 
 Grün = in dieser Iteration umgesetzt · gestrichelt = vorgesehen (Roadmap).
@@ -165,7 +166,9 @@ newscore/
 │   ├── argocd/             # ArgoCD Application-Manifeste (staging/prod)
 │   ├── prometheus/         # Scrape-Config + Alert-Rules
 │   ├── grafana/            # Provisioning (Datasources) + Dashboards
-│   └── loki/               # Promtail-Config (Log-Aggregation)
+│   ├── loki/               # Promtail-Config (Log-Aggregation)
+│   ├── varnish/            # default.vcl (Edge-Cache, TTLs, PURGE)
+│   └── apache/             # Reverse-Proxy (TLS/gzip/Security-Header)
 ├── docs/
 │   ├── adr/                # Architecture Decision Records
 │   ├── defects/            # Defect-Template + Bugs
@@ -194,6 +197,7 @@ Root Cause, Regressionstest).
 | [ADR-005](docs/adr/ADR-005-kafka-eventing.md) | Kafka-Eventing mit JSON-Serialisierung + DLQ |
 | [ADR-006](docs/adr/ADR-006-helm-argocd-gitops.md) | Helm-Umbrella-Chart + ArgoCD-GitOps |
 | [ADR-007](docs/adr/ADR-007-observability.md) | Observability mit Prometheus, Grafana und Loki |
+| [ADR-008](docs/adr/ADR-008-varnish-caching.md) | Varnish-Edge-Cache + Apache-Reverse-Proxy |
 
 ## 🛣 Roadmap
 
@@ -201,7 +205,7 @@ Root Cause, Regressionstest).
 - ✅ **Eventing (Epic 4):** Kafka-Producer/Consumer, DLQ, aktive Cache-Invalidierung, Analytics → Postgres — erledigt
 - ✅ **Plattform (Epic 5):** Helm-Umbrella-Chart, ArgoCD-Apps, HPA/PDB, NetworkPolicies (OpenShift) — erledigt
 - ✅ **Observability (Epic 6):** Prometheus-Scrape/Alerts, Grafana-Dashboards, JSON-Logs → Loki — erledigt
-- **Epic 3 — Caching:** Varnish-VCL + Apache-Proxy, gezielte `PURGE`-Invalidierung
+- ✅ **Caching (Epic 3):** Varnish-VCL + Apache-Proxy, event-getriebenes `PURGE` — erledigt
 - **Tracing:** OpenTelemetry + Tempo (MDC `traceId`/`spanId` bereits in den Logs)
 - **Eventing-Ausbau:** Avro + Schema-Registry, `user.pageview`-Producer im Frontend
 - **Datenanbindung:** Sophora-CMS-Resolver für die `*Service`-Interfaces

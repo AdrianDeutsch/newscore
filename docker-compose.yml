@@ -135,6 +135,28 @@ services:
         condition: service_healthy
     networks: [newscore]
 
+  # ---- Caching edge (Epic 3) — start with: docker compose --profile edge up ----
+  # client -> Apache (:8088, TLS/gzip/security headers) -> Varnish (cache) -> frontend
+  varnish:
+    image: varnish:7.5
+    profiles: [edge]
+    volumes:
+      - ./infrastructure/varnish/default.vcl:/etc/varnish/default.vcl:ro
+    depends_on:
+      - frontend
+    networks: [newscore]
+
+  apache:
+    build:
+      context: ./infrastructure/apache
+    image: newscore/apache:dev
+    profiles: [edge]
+    ports:
+      - "8088:80"
+    depends_on:
+      - varnish
+    networks: [newscore]
+
   # ---- Observability stack (Epic 6) — start with: docker compose --profile observability up ----
   prometheus:
     image: prom/prometheus:v2.54.1
