@@ -21,7 +21,7 @@
         <java.version>21</java.version>
         <jacoco.line.coverage>0.80</jacoco.line.coverage>
         <avro.version>1.11.4</avro.version>
-        <confluent.version>7.7.1</confluent.version>
+        <confluent.version>8.3.0</confluent.version>
     </properties>
 
     <!-- Confluent repository for the Avro/Schema-Registry serializers (see ADR-011) -->
