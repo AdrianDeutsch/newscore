@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@urql/core": "^5.0.6",
-    "graphql": "^16.9.0",
+    "graphql": "^17.0.1",
     "nuxt": "^3.13.2",
     "vue": "^3.5.12",
     "vue-router": "^4.4.5"
