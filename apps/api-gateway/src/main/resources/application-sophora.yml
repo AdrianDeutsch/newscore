@@ -1,0 +1,6 @@
+# Activated with: --spring.profiles.active=sophora
+# Swaps the article data source from the in-memory mock to the Sophora CMS HTTP API (ADR-010).
+# Combine with elasticsearch/kafka as needed, e.g. SPRING_PROFILES_ACTIVE=sophora,elasticsearch,kafka
+newscore:
+  sophora:
+    base-url: ${NEWSCORE_SOPHORA_BASE_URL:http://sophora:8080}

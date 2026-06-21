@@ -16,7 +16,7 @@ Aggregiert redaktionelle Inhalte und liefert sie typsicher an das Nuxt-Frontend.
 | Volltextsuche        | ElasticSearch (Profil `elasticsearch`), In-Memory als Default ([ADR-004](../../docs/adr/ADR-004-elasticsearch-search.md)) |
 | Event-Streaming      | Kafka (Profil `kafka`): `search.executed`-Producer, `article.*`-Consumer, DLQ ([ADR-005](../../docs/adr/ADR-005-kafka-eventing.md)) |
 | Aktive Invalidierung | `article.events` → ES-Reindex + Caffeine-Evict + Varnish-`PURGE` ([ADR-008](../../docs/adr/ADR-008-varnish-caching.md)); CMS-Simulator `POST /internal/cms/articles/{id}/publish` |
-| Datenquelle          | austauschbar — `*Service`-Interfaces; Mock heute, Sophora später      |
+| Datenquelle          | austauschbar via Profil: In-Memory (Default) ↔ Sophora-CMS-HTTP ([ADR-010](../../docs/adr/ADR-010-sophora-cms-source.md)) |
 | Observability        | Actuator + `/actuator/prometheus` (Histogram-Buckets); JSON-Logs im `json`-Profil ([ADR-007](../../docs/adr/ADR-007-observability.md)) |
 | Custom Scalar        | `DateTime` (→ `java.time.OffsetDateTime`)                             |
 
@@ -83,14 +83,17 @@ src/main/java/de/newscore/
 ├── config/         # CachingConfig (Caffeine), GraphQlConfig (DateTime-Scalar)
 ├── domain/         # Article, Author, Category, ArticleConnection, SearchResult (records)
 ├── service/        # *Service-Interfaces + InMemory*Service-Impls (Mock-Daten)
+├── cms/            # SophoraArticleService (HTTP-Adapter, Profil "sophora") + DTOs
 ├── search/         # ArticleDocument, Repository, ElasticsearchSearchService, ArticleIndexer
 ├── kafka/          # Events, EventPublisher (NoOp/Kafka), Consumer, Topics, DLQ-Config
-├── web/            # CmsSimulatorController (REST → article.events)
+├── cache/          # CachePurger (NoOp/HTTP-Varnish)
+├── web/            # CmsSimulatorController, PageViewController (REST)
 └── resolver/       # ArticleController (Query + BatchMapping), SearchController
 src/main/resources/
-├── application.yml             # Default-Profil (In-Memory-Suche, kein Broker)
+├── application.yml                # Default-Profil (In-Memory, kein Broker)
 ├── application-elasticsearch.yml  # Profil "elasticsearch"
 ├── application-kafka.yml          # Profil "kafka"
+├── application-sophora.yml        # Profil "sophora" (CMS-Datenquelle)
 └── graphql/schema.graphqls
 ```
 

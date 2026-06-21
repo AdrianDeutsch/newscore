@@ -8,16 +8,20 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 /**
  * In-memory {@link ArticleService} backed by a fixed set of mock articles, sorted newest-first.
+ * Active by default; the Sophora CMS implementation takes over under the {@code sophora} profile
+ * (see ADR-010).
  *
  * <p>Filtering by category resolves the requested slug via {@link CategoryService}, keeping category
  * ownership in a single place (DRY). Hot read paths are cached with Caffeine (see ADR-003).</p>
  */
 @Service
+@Profile("!sophora")
 public class InMemoryArticleService implements ArticleService {
 
     /** Upper bound for a single page to protect the backend from abusive limits. */

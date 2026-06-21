@@ -37,7 +37,7 @@
 
 - **Lauffähiger Vertical Slice in einem Befehl** — `docker compose up --build` startet GraphQL-Gateway + SSR-Frontend.
 - **N+1-frei by design** — nested `author`/`category` werden per DataLoader (`@BatchMapping`) gebatcht.
-- **Austauschbare Datenquelle** — Resolver kennen nur Service-Interfaces; Mock heute, Sophora/ElasticSearch morgen, ohne Resolver-Änderung.
+- **Austauschbare Datenquelle** — Resolver kennen nur Service-Interfaces; In-Memory-Mock, **Sophora-CMS** und ElasticSearch sind reine Profil-Schalter, ohne Resolver-Änderung.
 - **Hohe Testabdeckung, in CI erzwungen** — Backend **98 %**, Frontend **96 %** (Gate ≥ 80 %).
 - **Dokumentierte Entscheidungen** — jede Technologiewahl als [ADR](docs/adr/).
 
@@ -59,6 +59,7 @@
 | GraphQL-Client                  |   ✅   | urql (`ssrExchange`)                     | [ADR-001](docs/adr/ADR-001-graphql-client-urql.md) |
 | Edge-Caching                    |   ✅   | Varnish (VCL) + Apache (TLS/gzip/Header) | [ADR-008](docs/adr/ADR-008-varnish-caching.md), event-getriebenes PURGE |
 | Volltextsuche                   |   ✅   | ElasticSearch 8 (Profil-gesteuert)       | [ADR-004](docs/adr/ADR-004-elasticsearch-search.md), Testcontainers |
+| CMS-Datenquelle                 |   ✅   | Sophora-HTTP-Adapter (Profil `sophora`)  | [ADR-010](docs/adr/ADR-010-sophora-cms-source.md), Default In-Memory |
 | Event-Streaming                 |   ✅   | Kafka: Producer/Consumer + DLQ           | [ADR-005](docs/adr/ADR-005-kafka-eventing.md), EmbeddedKafka |
 | Aktive Cache-Invalidierung      |   ✅   | `article.events` → ES-Reindex + Evict    | schließt den Loop zu ADR-003 |
 | Analytics → PostgreSQL          |   ✅   | analytics-service (Node, kafkajs + pg)   | `search.events` + `user.events` (Pageviews) → Postgres |
@@ -212,6 +213,7 @@ Root Cause, Regressionstest).
 | [ADR-007](docs/adr/ADR-007-observability.md) | Observability mit Prometheus, Grafana und Loki |
 | [ADR-008](docs/adr/ADR-008-varnish-caching.md) | Varnish-Edge-Cache + Apache-Reverse-Proxy |
 | [ADR-009](docs/adr/ADR-009-distributed-tracing.md) | Distributed Tracing mit OpenTelemetry + Tempo |
+| [ADR-010](docs/adr/ADR-010-sophora-cms-source.md) | Sophora-CMS als austauschbare Datenquelle |
 
 ## 🛣 Roadmap
 
@@ -221,8 +223,9 @@ Root Cause, Regressionstest).
 - ✅ **Observability (Epic 6):** Prometheus-Scrape/Alerts, Grafana-Dashboards, JSON-Logs → Loki — erledigt
 - ✅ **Caching (Epic 3):** Varnish-VCL + Apache-Proxy, event-getriebenes `PURGE` — erledigt
 - ✅ **Tracing:** OpenTelemetry + Tempo (OTLP), Trace↔Logs-Korrelation — erledigt
-- **Eventing-Ausbau:** Avro + Schema-Registry, `user.pageview`-Producer im Frontend
-- **Datenanbindung:** Sophora-CMS-Resolver für die `*Service`-Interfaces
+- ✅ **Datenanbindung:** Sophora-CMS-HTTP-Adapter (Profil `sophora`), Default In-Memory — erledigt
+- ✅ **Analytics-Eventing:** `user.pageview`-Producer im Frontend — erledigt
+- **Eventing-Härtung:** Avro + Schema-Registry statt JSON (gezielte Migration, siehe ADR-005)
 - **Frontend:** GraphQL-Codegen, Playwright-E2E, i18n, PWA
 
 ## 📄 Lizenz
