@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---- Build stage ---------------------------------------------------------
-FROM eclipse-temurin:21-jdk AS build
+FROM eclipse-temurin:25-jdk AS build
 WORKDIR /workspace
 
 # Resolve dependencies first for better layer caching
@@ -14,7 +14,7 @@ COPY src/ src/
 RUN ./mvnw -B -q clean package -DskipTests
 
 # ---- Runtime stage -------------------------------------------------------
-FROM eclipse-temurin:21-jre AS runtime
+FROM eclipse-temurin:25-jre AS runtime
 WORKDIR /app
 
 # Run as a non-root user (OpenShift-friendly)
