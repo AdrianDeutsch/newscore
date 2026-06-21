@@ -14,6 +14,11 @@ spring:
       # Expose the SDL at /graphql/schema for tooling
       printer:
         enabled: true
+    cors:
+      # Allow the SSR frontend's client-side queries (browser -> gateway is cross-origin).
+      # Tighten to the real frontend origin(s) in production.
+      allowed-origins: "*"
+      allowed-methods: GET,POST
 
 server:
   port: 8080

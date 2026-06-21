@@ -14,9 +14,15 @@
 > einem CMS, ausgeliefert über eine GraphQL-API (Backend-for-Frontend) an ein server-seitig
 > gerendertes Nuxt-3-Frontend — ausgelegt für High-Traffic und GitOps-Betrieb auf OpenShift/Kubernetes.
 
+![NewsCore Demo](docs/images/hero-demo.gif)
+
+*Startseite mit Ressort-Filter · Artikeldetail · Volltextsuche — Nuxt 3 SSR über die GraphQL-API
+(als [MP4](docs/images/hero-demo.mp4)).*
+
 ## 📑 Inhaltsverzeichnis
 
 - [Highlights](#-highlights)
+- [Screenshots](#-screenshots)
 - [Features](#-features)
 - [Architektur](#-architektur)
 - [Quick Start](#-quick-start)
@@ -34,6 +40,13 @@
 - **Austauschbare Datenquelle** — Resolver kennen nur Service-Interfaces; Mock heute, Sophora/ElasticSearch morgen, ohne Resolver-Änderung.
 - **Hohe Testabdeckung, in CI erzwungen** — Backend **98 %**, Frontend **96 %** (Gate ≥ 80 %).
 - **Dokumentierte Entscheidungen** — jede Technologiewahl als [ADR](docs/adr/).
+
+## 📸 Screenshots
+
+| Startseite | Artikeldetail | Suche |
+|------------|---------------|-------|
+| ![Startseite](docs/images/screenshot-home.png) | ![Artikeldetail](docs/images/screenshot-article.png) | ![Suche](docs/images/screenshot-search.png) |
+| Ressort-Filter + Artikel-Grid | Breadcrumb, Autor, Lazy-Image | `search("klima")` → 2 Treffer |
 
 ## ✨ Features
 
