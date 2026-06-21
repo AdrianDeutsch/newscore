@@ -20,7 +20,7 @@
     <properties>
         <java.version>21</java.version>
         <jacoco.line.coverage>0.80</jacoco.line.coverage>
-        <avro.version>1.11.4</avro.version>
+        <avro.version>1.12.1</avro.version>
         <confluent.version>7.7.1</confluent.version>
     </properties>
 
