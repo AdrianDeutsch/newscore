@@ -1,0 +1,33 @@
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /apps/api-gateway
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: npm
+    directory: /apps/frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: npm
+    directory: /services/analytics-service
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directories:
+      - /apps/api-gateway
+      - /apps/frontend
+      - /services/analytics-service
+      - /infrastructure/apache
+    schedule:
+      interval: weekly

@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api-gateway:
+    name: api-gateway · Java 21
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      # ElasticSearch Testcontainers needs a high mmap count on the runner.
+      - name: Tune vm.max_map_count for ElasticSearch
+        run: sudo sysctl -w vm.max_map_count=262144
+      - name: Build, test & coverage gate (verify)
+        working-directory: apps/api-gateway
+        run: ./mvnw -B -ntp verify
+      - name: Checkstyle
+        working-directory: apps/api-gateway
+        run: ./mvnw -B -ntp checkstyle:check
+      - name: Upload JaCoCo report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: apps/api-gateway/target/site/jacoco/
+          if-no-files-found: ignore
+
+  frontend:
+    name: frontend · Node 22
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/frontend/package-lock.json
+      - name: Install
+        working-directory: apps/frontend
+        run: npm ci
+      - name: Lint
+        working-directory: apps/frontend
+        run: npm run lint
+      - name: Unit tests + coverage
+        working-directory: apps/frontend
+        run: npm run test:unit -- --run --coverage
+      - name: Build (SSR)
+        working-directory: apps/frontend
+        run: npm run build
+
+  analytics-service:
+    name: analytics-service · Node 22
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: services/analytics-service/package-lock.json
+      - name: Install
+        working-directory: services/analytics-service
+        run: npm ci
+      - name: Lint
+        working-directory: services/analytics-service
+        run: npm run lint
+      - name: Unit tests + coverage
+        working-directory: services/analytics-service
+        run: npm run test:unit -- --run --coverage
+      - name: Build
+        working-directory: services/analytics-service
+        run: npm run build
+
+  helm:
+    name: helm · lint & template
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.16.2
+      - name: Helm lint
+        run: helm lint infrastructure/helm/newscore
+      - name: Helm template (staging & prod)
+        run: |
+          helm template newscore infrastructure/helm/newscore -f infrastructure/helm/newscore/values-staging.yaml > /dev/null
+          helm template newscore infrastructure/helm/newscore -f infrastructure/helm/newscore/values-prod.yaml > /dev/null

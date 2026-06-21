@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href=".gitlab-ci.yml"><img src="https://img.shields.io/badge/pipeline-passing-brightgreen" alt="Pipeline"></a>
+  <a href="https://github.com/AdrianDeutsch/newscore/actions/workflows/ci.yml"><img src="https://github.com/AdrianDeutsch/newscore/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="apps/api-gateway"><img src="https://img.shields.io/badge/backend%20coverage-98%25-brightgreen" alt="Backend Coverage"></a>
   <a href="apps/frontend"><img src="https://img.shields.io/badge/frontend%20coverage-95%25-brightgreen" alt="Frontend Coverage"></a>
   <img src="https://img.shields.io/badge/Nuxt-3-00DC82?logo=nuxt.js&logoColor=white" alt="Nuxt 3">
@@ -155,10 +155,10 @@ Strikte Testpyramide — Bulk an Unit-Tests, gezielte Integrationstests, wenige 
 
 | Schicht           | Tooling                                         | Umfang                       |
 |-------------------|-------------------------------------------------|------------------------------|
-| Backend           | JUnit 5, Mockito, AssertJ                       | 41 Unit-Tests                |
-| Backend           | `GraphQlTester`, Testcontainers (ES), EmbeddedKafka | 11 Integrationstests     |
+| Backend           | JUnit 5, Mockito, AssertJ                       | 52 Unit-Tests                |
+| Backend           | `GraphQlTester`, Testcontainers (ES), EmbeddedKafka (+ Mock-Schema-Registry) | 11 Integrationstests |
 | Frontend          | Vitest, Vue Test Utils, happy-dom               | 16 Tests                     |
-| analytics-service | Vitest (gemockt: kafkajs + pg)                  | 9 Tests                      |
+| analytics-service | Vitest (gemockt: kafkajs + pg)                  | 12 Tests                     |
 
 ```bash
 cd apps/api-gateway          && ./mvnw verify                        # Backend: Tests + JaCoCo-Gate
@@ -171,7 +171,13 @@ Logik-Schicht). Flaky-Test-Policy: [FLAKY-TESTS.md](FLAKY-TESTS.md).
 
 ## 🔁 CI/CD Pipeline
 
-GitLab CI ([.gitlab-ci.yml](.gitlab-ci.yml)) mit fünf Stages und pfadbasierten `rules`:
+**GitHub Actions** ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) baut und testet bei jedem
+Push/PR alle Module parallel (Status oben als Badge): `api-gateway` (`./mvnw verify` inkl.
+Testcontainers-ES + EmbeddedKafka), `frontend`, `analytics-service` (Lint + Tests + Build) sowie
+`helm lint`/`template`.
+
+Die produktive **GitLab-CI + ArgoCD-GitOps**-Pipeline ([.gitlab-ci.yml](.gitlab-ci.yml)) bildet den
+Deploy-Pfad gemäß Spec ab — fünf Stages mit pfadbasierten `rules`:
 
 ```
 validate ─→ test ─→ build ─→ security ─→ deploy-staging ─→ deploy-prod (manuell)
@@ -205,9 +211,10 @@ newscore/
 │   ├── adr/                # Architecture Decision Records
 │   ├── defects/            # Defect-Template + Bugs
 │   └── images/banner.svg
+├── .github/                # Actions-CI, Issue/PR-Templates, Dependabot, CODEOWNERS
 ├── .githooks/              # pre-commit · commit-msg · pre-push
-├── docker-compose.yml      # lokales Stack-Setup (ES + Kafka + Postgres)
-├── .gitlab-ci.yml          # CI-Pipeline
+├── docker-compose.yml      # lokales Stack-Setup (ES + Kafka + Registry + Postgres)
+├── .gitlab-ci.yml          # GitLab-CI/GitOps-Pipeline (Deploy)
 ├── CONTRIBUTING.md · FLAKY-TESTS.md · LICENSE
 └── README.md
 ```

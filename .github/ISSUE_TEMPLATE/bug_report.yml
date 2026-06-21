@@ -1,0 +1,47 @@
+name: 🐞 Bug Report
+description: Einen Fehler melden
+title: "fix: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Danke für den Report! Bitte fülle die Felder so vollständig wie möglich aus.
+  - type: dropdown
+    id: component
+    attributes:
+      label: Komponente
+      options:
+        - api-gateway
+        - frontend
+        - analytics-service
+        - infrastructure (Helm/Compose/CI)
+        - sonstiges
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: Beschreibung
+      description: Was ist passiert? Was hast du erwartet?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Schritte zur Reproduktion
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Fehlermeldungen
+      render: shell
+  - type: input
+    id: env
+    attributes:
+      label: Umgebung
+      placeholder: "OS, Java/Node-Version, Branch/Commit"

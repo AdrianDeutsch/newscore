@@ -1,0 +1,29 @@
+name: ✨ Feature Request
+description: Eine Idee oder Verbesserung vorschlagen
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / Motivation
+      description: Welches Problem löst das Feature? Welcher Nutzen?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Vorgeschlagene Lösung
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativen
+      description: Welche Alternativen wurden bedacht?
+  - type: checkboxes
+    id: adr
+    attributes:
+      label: Architektur
+      options:
+        - label: Diese Änderung braucht vermutlich ein ADR in `docs/adr/`
