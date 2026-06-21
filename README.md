@@ -1,23 +1,33 @@
-# NewsCore
+<h1 align="center">NewsCore</h1>
 
-![NewsCore Banner](docs/images/banner.svg)
+<p align="center">
+  <img src="docs/images/banner.svg" alt="NewsCore – cloud-natives Nachrichtenportal" width="760">
+</p>
 
-[![Pipeline](https://img.shields.io/badge/pipeline-passing-brightgreen)](.gitlab-ci.yml)
-[![Backend Coverage](https://img.shields.io/badge/backend%20coverage-98%25-brightgreen)](apps/api-gateway)
-[![Frontend Coverage](https://img.shields.io/badge/frontend%20coverage-96%25-brightgreen)](apps/frontend)
-[![Nuxt 3](https://img.shields.io/badge/Nuxt-3-00DC82?logo=nuxt.js&logoColor=white)](https://nuxt.com)
-[![Java 21](https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white)](https://openjdk.org)
-[![GraphQL](https://img.shields.io/badge/GraphQL-BFF-E10098?logo=graphql&logoColor=white)](apps/api-gateway)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+<p align="center">
+  <a href=".gitlab-ci.yml"><img src="https://img.shields.io/badge/pipeline-passing-brightgreen" alt="Pipeline"></a>
+  <a href="apps/api-gateway"><img src="https://img.shields.io/badge/backend%20coverage-98%25-brightgreen" alt="Backend Coverage"></a>
+  <a href="apps/frontend"><img src="https://img.shields.io/badge/frontend%20coverage-95%25-brightgreen" alt="Frontend Coverage"></a>
+  <img src="https://img.shields.io/badge/Nuxt-3-00DC82?logo=nuxt.js&logoColor=white" alt="Nuxt 3">
+  <img src="https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white" alt="Java 21">
+  <img src="https://img.shields.io/badge/Spring%20Boot-3-6DB33F?logo=springboot&logoColor=white" alt="Spring Boot 3">
+  <img src="https://img.shields.io/badge/GraphQL-BFF-E10098?logo=graphql&logoColor=white" alt="GraphQL">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License"></a>
+</p>
 
-> **NewsCore** ist ein cloud-natives, hochverfügbares Nachrichtenportal: redaktionelle Inhalte aus
-> einem CMS, ausgeliefert über eine GraphQL-API (Backend-for-Frontend) an ein server-seitig
-> gerendertes Nuxt-3-Frontend — ausgelegt für High-Traffic und GitOps-Betrieb auf OpenShift/Kubernetes.
+<p align="center">
+  <strong>NewsCore</strong> ist ein cloud-natives, hochverfügbares Nachrichtenportal: redaktionelle
+  Inhalte aus einem CMS, ausgeliefert über eine GraphQL-API (Backend-for-Frontend) an ein
+  server-seitig gerendertes Nuxt-3-Frontend — ausgelegt für High-Traffic und GitOps-Betrieb auf
+  OpenShift/Kubernetes.
+</p>
 
-![NewsCore Demo](docs/images/hero-demo.gif)
-
-*Startseite mit Ressort-Filter · Artikeldetail · Volltextsuche — Nuxt 3 SSR über die GraphQL-API
-(als [MP4](docs/images/hero-demo.mp4)).*
+<p align="center">
+  <img src="docs/images/hero-demo.gif" alt="Live-Demo: Startseite → Artikeldetail → Volltextsuche" width="760">
+  <br>
+  <em>Ein echter End-to-End-Lauf: Startseite mit Ressort-Filter → Artikeldetail → Volltextsuche —
+  Nuxt 3 SSR über die GraphQL-API (auch als <a href="docs/images/hero-demo.mp4">MP4</a>).</em>
+</p>
 
 ## 📑 Inhaltsverzeichnis
 
@@ -43,10 +53,18 @@
 
 ## 📸 Screenshots
 
-| Startseite | Artikeldetail | Suche |
-|------------|---------------|-------|
-| ![Startseite](docs/images/screenshot-home.png) | ![Artikeldetail](docs/images/screenshot-article.png) | ![Suche](docs/images/screenshot-search.png) |
-| Ressort-Filter + Artikel-Grid | Breadcrumb, Autor, Lazy-Image | `search("klima")` → 2 Treffer |
+<table>
+  <tr>
+    <td width="33%"><img src="docs/images/screenshot-home.png" alt="Startseite"></td>
+    <td width="33%"><img src="docs/images/screenshot-article.png" alt="Artikeldetail"></td>
+    <td width="33%"><img src="docs/images/screenshot-search.png" alt="Suche"></td>
+  </tr>
+  <tr>
+    <td align="center"><em>Startseite — Ressort-Filter + Artikel-Grid</em></td>
+    <td align="center"><em>Artikeldetail — Breadcrumb, Autor, Cover</em></td>
+    <td align="center"><em>Suche — <code>search("klima")</code> → 2 Treffer</em></td>
+  </tr>
+</table>
 
 ## ✨ Features
 
