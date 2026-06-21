@@ -1,0 +1,18 @@
+{
+  "namespace": "de.newscore.kafka.avro",
+  "type": "record",
+  "name": "ArticleEvent",
+  "doc": "Editorial article lifecycle event (Epic 4 / ADR-011).",
+  "fields": [
+    {
+      "name": "type",
+      "type": {
+        "type": "enum",
+        "name": "ArticleEventType",
+        "symbols": ["PUBLISHED", "UPDATED", "DELETED"]
+      }
+    },
+    { "name": "articleId", "type": "string" },
+    { "name": "occurredAt", "type": "string", "doc": "ISO-8601 timestamp" }
+  ]
+}

@@ -7,6 +7,7 @@ export interface AnalyticsConfig {
   kafkaSearchTopic: string
   kafkaPageViewTopic: string
   kafkaGroupId: string
+  schemaRegistryUrl: string
   postgres: {
     host: string
     port: number
@@ -27,6 +28,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AnalyticsConfi
     kafkaSearchTopic: env.KAFKA_SEARCH_TOPIC ?? 'newscore.search.events',
     kafkaPageViewTopic: env.KAFKA_PAGEVIEW_TOPIC ?? 'newscore.user.events',
     kafkaGroupId: env.KAFKA_GROUP_ID ?? 'analytics-service',
+    schemaRegistryUrl: env.SCHEMA_REGISTRY_URL ?? 'http://localhost:8081',
     postgres: {
       host: env.PGHOST ?? 'localhost',
       port: Number(env.PGPORT ?? '5432'),

@@ -27,7 +27,7 @@ Topics (Key-Strategie in Klammern):
 
 `article.events` wird nach `articleId` partitioniert → Ordnung pro Artikel.
 
-### 2. JSON statt Avro (für diese Iteration)
+### 2. JSON statt Avro (für diese Iteration) — ⚠️ abgelöst durch [ADR-011](ADR-011-avro-schema-registry.md)
 **JSON** über `JsonSerializer`/`JsonDeserializer` (Spring Kafka), `trusted.packages = de.newscore.kafka`.
 
 Begründung: kein Schema-Registry-Betrieb nötig, sprachneutral lesbar (der Node-`analytics-service`

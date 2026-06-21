@@ -2,39 +2,29 @@ import type { AnalyticsRepository } from './analyticsRepository'
 import type { SearchExecutedEvent } from './types'
 
 /**
- * Parses a raw Kafka message value and records the search event.
+ * Records a search event from an Avro-decoded message. Pure with respect to I/O (the repository is
+ * injected). Structurally invalid payloads are skipped rather than thrown.
  *
- * <p>Pure with respect to I/O (the repository is injected), so it is fully unit-testable. Returns
- * whether the event was recorded; unprocessable payloads (empty, non-JSON, structurally invalid)
- * are skipped rather than throwing, so a single bad message does not crash the consumer.</p>
- *
- * @param rawValue   the raw message value (or null)
+ * @param event      the decoded event (shape not yet validated)
  * @param repository the analytics repository
- * @returns true if the event was recorded, false if it was skipped
+ * @returns true if recorded, false if skipped
  */
 export async function handleSearchEvent(
-  rawValue: string | null,
+  event: unknown,
   repository: AnalyticsRepository,
 ): Promise<boolean> {
-  if (!rawValue) {
+  if (!event || typeof event !== 'object') {
     return false
   }
-
-  let parsed: Partial<SearchExecutedEvent>
-  try {
-    parsed = JSON.parse(rawValue) as Partial<SearchExecutedEvent>
-  } catch {
-    return false
-  }
-
-  if (typeof parsed.query !== 'string' || typeof parsed.resultCount !== 'number') {
+  const e = event as Partial<SearchExecutedEvent>
+  if (typeof e.query !== 'string' || typeof e.resultCount !== 'number') {
     return false
   }
 
   await repository.insertSearchEvent({
-    query: parsed.query,
-    resultCount: parsed.resultCount,
-    occurredAt: parsed.occurredAt ?? new Date().toISOString(),
+    query: e.query,
+    resultCount: e.resultCount,
+    occurredAt: e.occurredAt ?? new Date().toISOString(),
   })
   return true
 }

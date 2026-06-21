@@ -8,6 +8,7 @@ describe('loadConfig', () => {
     expect(config.kafkaBrokers).toEqual(['localhost:9092'])
     expect(config.kafkaSearchTopic).toBe('newscore.search.events')
     expect(config.kafkaPageViewTopic).toBe('newscore.user.events')
+    expect(config.schemaRegistryUrl).toBe('http://localhost:8081')
     expect(config.postgres).toMatchObject({ host: 'localhost', port: 5432, database: 'newscore' })
   })
 
@@ -17,6 +18,7 @@ describe('loadConfig', () => {
       KAFKA_SEARCH_TOPIC: 'custom.search',
       KAFKA_PAGEVIEW_TOPIC: 'custom.pageview',
       KAFKA_GROUP_ID: 'group-x',
+      SCHEMA_REGISTRY_URL: 'http://registry:8081',
       PGHOST: 'db',
       PGPORT: '6543',
       PGUSER: 'u',
@@ -28,6 +30,7 @@ describe('loadConfig', () => {
     expect(config.kafkaSearchTopic).toBe('custom.search')
     expect(config.kafkaPageViewTopic).toBe('custom.pageview')
     expect(config.kafkaGroupId).toBe('group-x')
+    expect(config.schemaRegistryUrl).toBe('http://registry:8081')
     expect(config.postgres).toEqual({
       host: 'db',
       port: 6543,

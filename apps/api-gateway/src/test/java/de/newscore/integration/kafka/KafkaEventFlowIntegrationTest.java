@@ -10,6 +10,8 @@ import de.newscore.kafka.ArticleEventType;
 import de.newscore.kafka.EventPublisher;
 import de.newscore.kafka.KafkaTopics;
 import de.newscore.kafka.SearchExecutedEvent;
+import io.confluent.kafka.serializers.KafkaAvroDeserializer;
+import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +20,8 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.jupiter.api.DisplayName;
@@ -35,11 +39,14 @@ import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.test.context.ActiveProfiles;
 
 /**
- * End-to-end Kafka test using an in-JVM broker (EmbeddedKafka) — no Docker required, so it runs in
- * {@code ./mvnw verify} everywhere. Covers the producer, the consumer's active cache eviction and
- * the dead-letter routing of poison records (Epic 4 / ADR-005).
+ * End-to-end Kafka test using an in-JVM broker (EmbeddedKafka) and a <strong>mock</strong> Confluent
+ * Schema Registry ({@code mock://} URL) — no Docker / external registry required, so it runs in
+ * {@code ./mvnw verify} everywhere. Covers the Avro producer, the consumer's active cache eviction
+ * and the dead-letter routing of poison records (ADR-011).
  */
-@SpringBootTest(classes = NewsCoreApplication.class)
+@SpringBootTest(
+        classes = NewsCoreApplication.class,
+        properties = "spring.kafka.properties.schema.registry.url=mock://newscore")
 @ActiveProfiles("kafka")
 @EmbeddedKafka(
         partitions = 1,
@@ -47,6 +54,8 @@ import org.springframework.test.context.ActiveProfiles;
         bootstrapServersProperty = "spring.kafka.bootstrap-servers")
 @Tag("integration")
 class KafkaEventFlowIntegrationTest {
+
+    private static final String REGISTRY = "mock://newscore";
 
     @Autowired
     private EventPublisher eventPublisher;
@@ -56,15 +65,16 @@ class KafkaEventFlowIntegrationTest {
     private EmbeddedKafkaBroker broker;
 
     @Test
-    @DisplayName("search-executed events are published to the search topic")
-    void searchExecutedEvent_isPublished() {
+    @DisplayName("search-executed events are published as Avro to the search topic")
+    void searchExecutedEvent_isPublishedAsAvro() {
         eventPublisher.publishSearchExecuted(SearchExecutedEvent.of("klima", 2));
 
-        try (Consumer<String, String> consumer = stringConsumer("search-it")) {
+        try (Consumer<String, de.newscore.kafka.avro.SearchExecutedEvent> consumer = avroConsumer("search-it")) {
             consumer.subscribe(List.of(KafkaTopics.SEARCH_EVENTS));
-            ConsumerRecord<String, String> record =
+            ConsumerRecord<String, de.newscore.kafka.avro.SearchExecutedEvent> record =
                     KafkaTestUtils.getSingleRecord(consumer, KafkaTopics.SEARCH_EVENTS, Duration.ofSeconds(15));
-            assertThat(record.value()).contains("\"query\":\"klima\"").contains("\"resultCount\":2");
+            assertThat(record.value().getQuery()).isEqualTo("klima");
+            assertThat(record.value().getResultCount()).isEqualTo(2);
         }
     }
 
@@ -82,35 +92,41 @@ class KafkaEventFlowIntegrationTest {
     }
 
     @Test
-    @DisplayName("a poison record is routed to the dead-letter topic")
+    @DisplayName("a poison record (non-Avro) is routed to the dead-letter topic")
     void poisonRecord_goesToDeadLetterTopic() {
-        try (Producer<String, String> producer = stringProducer()) {
-            producer.send(new ProducerRecord<>(KafkaTopics.ARTICLE_EVENTS, "bad", "this-is-not-valid-json"));
+        try (Producer<String, byte[]> producer = bytesProducer()) {
+            producer.send(new ProducerRecord<>(KafkaTopics.ARTICLE_EVENTS, "bad", "not-avro".getBytes()));
             producer.flush();
         }
 
-        try (Consumer<String, String> consumer = stringConsumer("dlt-it")) {
+        try (Consumer<String, byte[]> consumer = bytesConsumer("dlt-it")) {
             consumer.subscribe(List.of(KafkaTopics.ARTICLE_EVENTS_DLT));
-            // Reaching here means a record arrived on the DLT (getSingleRecord throws otherwise).
-            // The recoverer preserves the original key; the payload is re-serialized by the
-            // gateway's JSON template, so we assert on the key rather than the raw value.
-            ConsumerRecord<String, String> record =
+            ConsumerRecord<String, byte[]> record =
                     KafkaTestUtils.getSingleRecord(consumer, KafkaTopics.ARTICLE_EVENTS_DLT, Duration.ofSeconds(20));
             assertThat(record.key()).isEqualTo("bad");
-            assertThat(record.value()).isNotBlank();
         }
     }
 
-    private Consumer<String, String> stringConsumer(String group) {
+    private <T> Consumer<String, T> avroConsumer(String group) {
         Map<String, Object> props = KafkaTestUtils.consumerProps(group, "true", broker);
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), new StringDeserializer())
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, KafkaAvroDeserializer.class);
+        props.put(KafkaAvroDeserializerConfig.SCHEMA_REGISTRY_URL_CONFIG, REGISTRY);
+        props.put(KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG, true);
+        return new DefaultKafkaConsumerFactory<String, T>(props).createConsumer();
+    }
+
+    private Consumer<String, byte[]> bytesConsumer(String group) {
+        Map<String, Object> props = KafkaTestUtils.consumerProps(group, "true", broker);
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), new ByteArrayDeserializer())
                 .createConsumer();
     }
 
-    private Producer<String, String> stringProducer() {
+    private Producer<String, byte[]> bytesProducer() {
         Map<String, Object> props = KafkaTestUtils.producerProps(broker);
-        return new DefaultKafkaProducerFactory<>(props, new StringSerializer(), new StringSerializer())
+        return new DefaultKafkaProducerFactory<>(props, new StringSerializer(), new ByteArraySerializer())
                 .createProducer();
     }
 }

@@ -18,9 +18,10 @@ describe('handleSearchEvent', () => {
   })
 
   it('records a valid event', async () => {
-    const value = JSON.stringify({ query: 'klima', resultCount: 2, occurredAt: '2026-06-19T10:00:00Z' })
-
-    const recorded = await handleSearchEvent(value, repository)
+    const recorded = await handleSearchEvent(
+      { query: 'klima', resultCount: 2, occurredAt: '2026-06-19T10:00:00Z' },
+      repository,
+    )
 
     expect(recorded).toBe(true)
     expect(repository.insertSearchEvent).toHaveBeenCalledWith({
@@ -31,25 +32,22 @@ describe('handleSearchEvent', () => {
   })
 
   it('defaults occurredAt when it is missing', async () => {
-    await handleSearchEvent(JSON.stringify({ query: 'x', resultCount: 0 }), repository)
+    await handleSearchEvent({ query: 'x', resultCount: 0 }, repository)
 
     expect(repository.insertSearchEvent).toHaveBeenCalledWith(
       expect.objectContaining({ query: 'x', resultCount: 0, occurredAt: expect.any(String) }),
     )
   })
 
-  it('skips a null payload', async () => {
+  it('skips a null or non-object payload', async () => {
     expect(await handleSearchEvent(null, repository)).toBe(false)
-    expect(repository.insertSearchEvent).not.toHaveBeenCalled()
-  })
-
-  it('skips invalid JSON', async () => {
-    expect(await handleSearchEvent('not-json', repository)).toBe(false)
+    expect(await handleSearchEvent('nope', repository)).toBe(false)
     expect(repository.insertSearchEvent).not.toHaveBeenCalled()
   })
 
   it('skips a structurally invalid event', async () => {
-    expect(await handleSearchEvent(JSON.stringify({ foo: 'bar' }), repository)).toBe(false)
+    expect(await handleSearchEvent({ foo: 'bar' }, repository)).toBe(false)
+    expect(await handleSearchEvent({ query: 'x', resultCount: 'two' }, repository)).toBe(false)
     expect(repository.insertSearchEvent).not.toHaveBeenCalled()
   })
 })

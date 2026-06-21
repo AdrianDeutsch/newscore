@@ -1,5 +1,7 @@
 package de.newscore.unit.kafka;
 
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
 import de.newscore.kafka.ArticleEvent;
@@ -25,32 +27,34 @@ class KafkaEventPublisherTest {
     private KafkaEventPublisher publisher;
 
     @Test
-    @DisplayName("article events are keyed by article id on the article topic")
-    void publishArticleEvent_sendsKeyedToArticleTopic() {
-        ArticleEvent event = ArticleEvent.of(ArticleEventType.PUBLISHED, "42");
+    @DisplayName("article events are mapped to Avro and keyed by article id on the article topic")
+    void publishArticleEvent_sendsKeyedAvro() {
+        publisher.publishArticleEvent(ArticleEvent.of(ArticleEventType.PUBLISHED, "42"));
 
-        publisher.publishArticleEvent(event);
-
-        verify(kafkaTemplate).send(KafkaTopics.ARTICLE_EVENTS, "42", event);
+        verify(kafkaTemplate).send(eq(KafkaTopics.ARTICLE_EVENTS), eq("42"),
+                argThat(value -> value instanceof de.newscore.kafka.avro.ArticleEvent avro
+                        && avro.getArticleId().equals("42")
+                        && avro.getType().name().equals("PUBLISHED")));
     }
 
     @Test
-    @DisplayName("search events go to the search topic")
-    void publishSearchExecuted_sendsToSearchTopic() {
-        SearchExecutedEvent event = SearchExecutedEvent.of("klima", 3);
+    @DisplayName("search events are mapped to Avro on the search topic")
+    void publishSearchExecuted_sendsAvro() {
+        publisher.publishSearchExecuted(SearchExecutedEvent.of("klima", 3));
 
-        publisher.publishSearchExecuted(event);
-
-        verify(kafkaTemplate).send(KafkaTopics.SEARCH_EVENTS, event);
+        verify(kafkaTemplate).send(eq(KafkaTopics.SEARCH_EVENTS),
+                argThat(value -> value instanceof de.newscore.kafka.avro.SearchExecutedEvent avro
+                        && avro.getQuery().equals("klima")
+                        && avro.getResultCount() == 3));
     }
 
     @Test
-    @DisplayName("page-view events go to the user topic")
-    void publishPageView_sendsToUserTopic() {
-        PageViewEvent event = PageViewEvent.of("/article/1");
+    @DisplayName("page-view events are mapped to Avro on the user topic")
+    void publishPageView_sendsAvro() {
+        publisher.publishPageView(PageViewEvent.of("/article/1"));
 
-        publisher.publishPageView(event);
-
-        verify(kafkaTemplate).send(KafkaTopics.USER_EVENTS, event);
+        verify(kafkaTemplate).send(eq(KafkaTopics.USER_EVENTS),
+                argThat(value -> value instanceof de.newscore.kafka.avro.PageViewEvent avro
+                        && avro.getPath().equals("/article/1")));
     }
 }

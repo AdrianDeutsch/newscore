@@ -14,7 +14,7 @@ Aggregiert redaktionelle Inhalte und liefert sie typsicher an das Nuxt-Frontend.
 | N+1-Vermeidung       | `@BatchMapping` (DataLoader) für `Article.author` / `Article.category` |
 | Caching              | Caffeine via `@Cacheable` (`article`, `articles`)                     |
 | Volltextsuche        | ElasticSearch (Profil `elasticsearch`), In-Memory als Default ([ADR-004](../../docs/adr/ADR-004-elasticsearch-search.md)) |
-| Event-Streaming      | Kafka (Profil `kafka`): `search.executed`-Producer, `article.*`-Consumer, DLQ ([ADR-005](../../docs/adr/ADR-005-kafka-eventing.md)) |
+| Event-Streaming      | Kafka (Profil `kafka`): **Avro** + Schema-Registry, Producer/Consumer, DLQ ([ADR-011](../../docs/adr/ADR-011-avro-schema-registry.md)) |
 | Aktive Invalidierung | `article.events` → ES-Reindex + Caffeine-Evict + Varnish-`PURGE` ([ADR-008](../../docs/adr/ADR-008-varnish-caching.md)); CMS-Simulator `POST /internal/cms/articles/{id}/publish` |
 | Datenquelle          | austauschbar via Profil: In-Memory (Default) ↔ Sophora-CMS-HTTP ([ADR-010](../../docs/adr/ADR-010-sophora-cms-source.md)) |
 | Observability        | Actuator + `/actuator/prometheus` (Histogram-Buckets); JSON-Logs im `json`-Profil ([ADR-007](../../docs/adr/ADR-007-observability.md)) |
@@ -85,7 +85,8 @@ src/main/java/de/newscore/
 ├── service/        # *Service-Interfaces + InMemory*Service-Impls (Mock-Daten)
 ├── cms/            # SophoraArticleService (HTTP-Adapter, Profil "sophora") + DTOs
 ├── search/         # ArticleDocument, Repository, ElasticsearchSearchService, ArticleIndexer
-├── kafka/          # Events, EventPublisher (NoOp/Kafka), Consumer, Topics, DLQ-Config
+├── kafka/          # Events, EventPublisher (NoOp/Kafka), Consumer, AvroEventMapper, DLQ-Config
+src/main/avro/      # Avro-Schemas (.avsc) → Codegen via avro-maven-plugin
 ├── cache/          # CachePurger (NoOp/HTTP-Varnish)
 ├── web/            # CmsSimulatorController, PageViewController (REST)
 └── resolver/       # ArticleController (Query + BatchMapping), SearchController

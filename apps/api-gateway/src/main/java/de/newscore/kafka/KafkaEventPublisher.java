@@ -20,16 +20,16 @@ public class KafkaEventPublisher implements EventPublisher {
 
     @Override
     public void publishArticleEvent(ArticleEvent event) {
-        kafkaTemplate.send(KafkaTopics.ARTICLE_EVENTS, event.articleId(), event);
+        kafkaTemplate.send(KafkaTopics.ARTICLE_EVENTS, event.articleId(), AvroEventMapper.toAvro(event));
     }
 
     @Override
     public void publishSearchExecuted(SearchExecutedEvent event) {
-        kafkaTemplate.send(KafkaTopics.SEARCH_EVENTS, event);
+        kafkaTemplate.send(KafkaTopics.SEARCH_EVENTS, AvroEventMapper.toAvro(event));
     }
 
     @Override
     public void publishPageView(PageViewEvent event) {
-        kafkaTemplate.send(KafkaTopics.USER_EVENTS, event);
+        kafkaTemplate.send(KafkaTopics.USER_EVENTS, AvroEventMapper.toAvro(event));
     }
 }

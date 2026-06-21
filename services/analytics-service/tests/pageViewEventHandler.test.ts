@@ -18,9 +18,10 @@ describe('handlePageViewEvent', () => {
   })
 
   it('records a valid page view', async () => {
-    const value = JSON.stringify({ path: '/article/1', occurredAt: '2026-06-20T10:00:00Z' })
-
-    const recorded = await handlePageViewEvent(value, repository)
+    const recorded = await handlePageViewEvent(
+      { path: '/article/1', occurredAt: '2026-06-20T10:00:00Z' },
+      repository,
+    )
 
     expect(recorded).toBe(true)
     expect(repository.insertPageView).toHaveBeenCalledWith({
@@ -30,17 +31,17 @@ describe('handlePageViewEvent', () => {
   })
 
   it('defaults occurredAt when it is missing', async () => {
-    await handlePageViewEvent(JSON.stringify({ path: '/' }), repository)
+    await handlePageViewEvent({ path: '/' }, repository)
 
     expect(repository.insertPageView).toHaveBeenCalledWith(
       expect.objectContaining({ path: '/', occurredAt: expect.any(String) }),
     )
   })
 
-  it('skips a null payload, invalid JSON and a missing path', async () => {
+  it('skips null, non-object and structurally invalid payloads', async () => {
     expect(await handlePageViewEvent(null, repository)).toBe(false)
-    expect(await handlePageViewEvent('not-json', repository)).toBe(false)
-    expect(await handlePageViewEvent(JSON.stringify({ foo: 'bar' }), repository)).toBe(false)
+    expect(await handlePageViewEvent('nope', repository)).toBe(false)
+    expect(await handlePageViewEvent({ foo: 'bar' }, repository)).toBe(false)
     expect(repository.insertPageView).not.toHaveBeenCalled()
   })
 })

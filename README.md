@@ -78,7 +78,7 @@
 | Edge-Caching                    |   ✅   | Varnish (VCL) + Apache (TLS/gzip/Header) | [ADR-008](docs/adr/ADR-008-varnish-caching.md), event-getriebenes PURGE |
 | Volltextsuche                   |   ✅   | ElasticSearch 8 (Profil-gesteuert)       | [ADR-004](docs/adr/ADR-004-elasticsearch-search.md), Testcontainers |
 | CMS-Datenquelle                 |   ✅   | Sophora-HTTP-Adapter (Profil `sophora`)  | [ADR-010](docs/adr/ADR-010-sophora-cms-source.md), Default In-Memory |
-| Event-Streaming                 |   ✅   | Kafka: Producer/Consumer + DLQ           | [ADR-005](docs/adr/ADR-005-kafka-eventing.md), EmbeddedKafka |
+| Event-Streaming                 |   ✅   | Kafka + **Avro/Schema-Registry** + DLQ   | [ADR-011](docs/adr/ADR-011-avro-schema-registry.md), EmbeddedKafka + Mock-Registry |
 | Aktive Cache-Invalidierung      |   ✅   | `article.events` → ES-Reindex + Evict    | schließt den Loop zu ADR-003 |
 | Analytics → PostgreSQL          |   ✅   | analytics-service (Node, kafkajs + pg)   | `search.events` + `user.events` (Pageviews) → Postgres |
 | Observability-Endpoint          |   ✅   | Actuator + `/actuator/prometheus`        | Grafana folgt |
@@ -232,6 +232,7 @@ Root Cause, Regressionstest).
 | [ADR-008](docs/adr/ADR-008-varnish-caching.md) | Varnish-Edge-Cache + Apache-Reverse-Proxy |
 | [ADR-009](docs/adr/ADR-009-distributed-tracing.md) | Distributed Tracing mit OpenTelemetry + Tempo |
 | [ADR-010](docs/adr/ADR-010-sophora-cms-source.md) | Sophora-CMS als austauschbare Datenquelle |
+| [ADR-011](docs/adr/ADR-011-avro-schema-registry.md) | Avro + Schema-Registry (ersetzt ADR-005 §2) |
 
 ## 🛣 Roadmap
 
@@ -243,7 +244,7 @@ Root Cause, Regressionstest).
 - ✅ **Tracing:** OpenTelemetry + Tempo (OTLP), Trace↔Logs-Korrelation — erledigt
 - ✅ **Datenanbindung:** Sophora-CMS-HTTP-Adapter (Profil `sophora`), Default In-Memory — erledigt
 - ✅ **Analytics-Eventing:** `user.pageview`-Producer im Frontend — erledigt
-- **Eventing-Härtung:** Avro + Schema-Registry statt JSON (gezielte Migration, siehe ADR-005)
+- ✅ **Eventing-Härtung:** Avro + Confluent Schema-Registry (ersetzt JSON aus ADR-005) — erledigt
 - **Frontend:** GraphQL-Codegen, Playwright-E2E, i18n, PWA
 
 ## 📄 Lizenz

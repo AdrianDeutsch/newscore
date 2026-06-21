@@ -40,20 +40,21 @@ public class ArticleEventConsumer {
     }
 
     @KafkaListener(topics = KafkaTopics.ARTICLE_EVENTS, groupId = "${spring.application.name}-article-indexer")
-    public void onArticleEvent(ArticleEvent event) {
-        log.info("Handling {} for article {}", event.type(), event.articleId());
+    public void onArticleEvent(de.newscore.kafka.avro.ArticleEvent event) {
+        String articleId = event.getArticleId();
+        log.info("Handling {} for article {}", event.getType(), articleId);
         evictArticleCaches();
-        cachePurger.purgeArticle(event.articleId());
+        cachePurger.purgeArticle(articleId);
         cachePurger.purgeHomepage();
 
         ArticleIndexer indexer = indexerProvider.getIfAvailable();
         if (indexer == null) {
             return;
         }
-        if (event.type() == ArticleEventType.DELETED) {
-            indexer.delete(event.articleId());
+        if (event.getType() == de.newscore.kafka.avro.ArticleEventType.DELETED) {
+            indexer.delete(articleId);
         } else {
-            indexer.indexOne(event.articleId());
+            indexer.indexOne(articleId);
         }
     }
 

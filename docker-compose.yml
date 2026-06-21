@@ -58,6 +58,25 @@ services:
       start_period: 20s
     networks: [newscore]
 
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.7.1
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kafka:9092
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+    ports:
+      - "8081:8081"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8081/subjects || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 20s
+    networks: [newscore]
+
   postgres:
     image: postgres:16-alpine
     environment:
@@ -87,10 +106,13 @@ services:
       SPRING_PROFILES_ACTIVE: elasticsearch,kafka
       SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SCHEMA_REGISTRY_URL: http://schema-registry:8081
     depends_on:
       elasticsearch:
         condition: service_healthy
       kafka:
+        condition: service_healthy
+      schema-registry:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "bash -c '</dev/tcp/127.0.0.1/8080' 2>/dev/null || exit 1"]
@@ -108,6 +130,7 @@ services:
       KAFKA_BROKERS: kafka:9092
       KAFKA_SEARCH_TOPIC: newscore.search.events
       KAFKA_PAGEVIEW_TOPIC: newscore.user.events
+      SCHEMA_REGISTRY_URL: http://schema-registry:8081
       PGHOST: postgres
       PGPORT: "5432"
       PGUSER: newscore
@@ -115,6 +138,8 @@ services:
       PGDATABASE: newscore
     depends_on:
       kafka:
+        condition: service_healthy
+      schema-registry:
         condition: service_healthy
       postgres:
         condition: service_healthy

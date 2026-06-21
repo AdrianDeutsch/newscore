@@ -7,9 +7,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import de.newscore.cache.CachePurger;
-import de.newscore.kafka.ArticleEvent;
 import de.newscore.kafka.ArticleEventConsumer;
-import de.newscore.kafka.ArticleEventType;
+import de.newscore.kafka.avro.ArticleEvent;
+import de.newscore.kafka.avro.ArticleEventType;
 import de.newscore.search.ArticleIndexer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,6 +38,14 @@ class ArticleEventConsumerTest {
         return new ArticleEventConsumer(cacheManager, indexerProvider, cachePurger);
     }
 
+    private static ArticleEvent event(ArticleEventType type, String articleId) {
+        return ArticleEvent.newBuilder()
+                .setType(type)
+                .setArticleId(articleId)
+                .setOccurredAt("2026-06-20T10:00:00Z")
+                .build();
+    }
+
     @Test
     @DisplayName("PUBLISHED evicts caches and re-indexes the article")
     void published_evictsAndReindexes() {
@@ -45,7 +53,7 @@ class ArticleEventConsumerTest {
         when(cacheManager.getCache("articles")).thenReturn(cache);
         when(indexerProvider.getIfAvailable()).thenReturn(indexer);
 
-        consumer().onArticleEvent(ArticleEvent.of(ArticleEventType.PUBLISHED, "1"));
+        consumer().onArticleEvent(event(ArticleEventType.PUBLISHED, "1"));
 
         verify(cache, atLeastOnce()).clear();
         verify(cachePurger).purgeArticle("1");
@@ -59,7 +67,7 @@ class ArticleEventConsumerTest {
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         when(indexerProvider.getIfAvailable()).thenReturn(indexer);
 
-        consumer().onArticleEvent(ArticleEvent.of(ArticleEventType.DELETED, "9"));
+        consumer().onArticleEvent(event(ArticleEventType.DELETED, "9"));
 
         verify(indexer).delete("9");
     }
@@ -70,7 +78,7 @@ class ArticleEventConsumerTest {
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         when(indexerProvider.getIfAvailable()).thenReturn(null);
 
-        consumer().onArticleEvent(ArticleEvent.of(ArticleEventType.UPDATED, "1"));
+        consumer().onArticleEvent(event(ArticleEventType.UPDATED, "1"));
 
         verify(cache, atLeastOnce()).clear();
         verifyNoInteractions(indexer);

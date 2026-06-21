@@ -40,6 +40,7 @@ Konfiguration über Umgebungsvariablen (Defaults für lokal):
 | `KAFKA_SEARCH_TOPIC` | `newscore.search.events` |
 | `KAFKA_PAGEVIEW_TOPIC` | `newscore.user.events` |
 | `KAFKA_GROUP_ID`| `analytics-service`        |
+| `SCHEMA_REGISTRY_URL` | `http://localhost:8081` |
 | `PGHOST`        | `localhost`                |
 | `PGPORT`        | `5432`                     |
 | `PGUSER` / `PGPASSWORD` / `PGDATABASE` | `newscore` |
