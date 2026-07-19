@@ -16,21 +16,21 @@
   "dependencies": {
     "@urql/core": "^5.0.6",
     "graphql": "^16.9.0",
-    "nuxt": "^3.13.2",
-    "vue": "^3.5.12",
+    "nuxt": "^3.21.9",
+    "vue": "^3.5.40",
     "vue-router": "^4.4.5"
   },
   "devDependencies": {
-    "@eslint/js": "^9.13.0",
+    "@eslint/js": "^9.39.5",
     "@vitejs/plugin-vue": "^5.2.1",
-    "@vitest/coverage-v8": "^4.1.9",
+    "@vitest/coverage-v8": "^4.1.10",
     "@vue/test-utils": "^2.4.6",
-    "eslint": "^9.13.0",
+    "eslint": "^9.39.5",
     "eslint-plugin-vue": "^9.30.0",
     "globals": "^15.11.0",
-    "happy-dom": "^20.10.6",
+    "happy-dom": "^20.11.0",
     "typescript": "^5.6.3",
-    "typescript-eslint": "^8.12.2",
+    "typescript-eslint": "^8.64.0",
     "vitest": "^4.1.9",
     "vue-tsc": "^2.1.10"
   },
