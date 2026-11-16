@@ -1,13 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AnalyticsRepository } from '../src/analyticsRepository'
 import { handlePageViewEvent } from '../src/pageViewEventHandler'
+import type { MessageSource } from '../src/types'
+
+const SOURCE: MessageSource = { topic: 'newscore.user.events', partition: 1, offset: '12' }
 
 function createRepository() {
   return {
-    insertSearchEvent: vi.fn().mockResolvedValue(undefined),
-    insertPageView: vi.fn().mockResolvedValue(undefined),
+    insertSearchEvent: vi.fn().mockResolvedValue(true),
+    insertPageView: vi.fn().mockResolvedValue(true),
     close: vi.fn().mockResolvedValue(undefined),
-  } satisfies AnalyticsRepository & { insertPageView: ReturnType<typeof vi.fn> }
+  } satisfies AnalyticsRepository
 }
 
 describe('handlePageViewEvent', () => {
@@ -17,31 +20,39 @@ describe('handlePageViewEvent', () => {
     repository = createRepository()
   })
 
-  it('records a valid page view', async () => {
-    const recorded = await handlePageViewEvent(
+  it('records a valid page view together with the Kafka record it came from', async () => {
+    const outcome = await handlePageViewEvent(
       { path: '/article/1', occurredAt: '2026-06-20T10:00:00Z' },
+      SOURCE,
       repository,
     )
 
-    expect(recorded).toBe(true)
-    expect(repository.insertPageView).toHaveBeenCalledWith({
-      path: '/article/1',
-      occurredAt: '2026-06-20T10:00:00Z',
-    })
-  })
-
-  it('defaults occurredAt when it is missing', async () => {
-    await handlePageViewEvent({ path: '/' }, repository)
-
+    expect(outcome).toBe('recorded')
     expect(repository.insertPageView).toHaveBeenCalledWith(
-      expect.objectContaining({ path: '/', occurredAt: expect.any(String) }),
+      { path: '/article/1', occurredAt: '2026-06-20T10:00:00Z' },
+      SOURCE,
     )
   })
 
-  it('skips null, non-object and structurally invalid payloads', async () => {
-    expect(await handlePageViewEvent(null, repository)).toBe(false)
-    expect(await handlePageViewEvent('nope', repository)).toBe(false)
-    expect(await handlePageViewEvent({ foo: 'bar' }, repository)).toBe(false)
+  it('reports a duplicate when the repository had the record already', async () => {
+    repository.insertPageView.mockResolvedValue(false)
+
+    expect(await handlePageViewEvent({ path: '/' }, SOURCE, repository)).toBe('duplicate')
+  })
+
+  it('defaults occurredAt when it is missing', async () => {
+    await handlePageViewEvent({ path: '/' }, SOURCE, repository)
+
+    expect(repository.insertPageView).toHaveBeenCalledWith(
+      expect.objectContaining({ path: '/', occurredAt: expect.any(String) }),
+      SOURCE,
+    )
+  })
+
+  it('skips payloads without a usable path', async () => {
+    expect(await handlePageViewEvent(null, SOURCE, repository)).toBe('skipped')
+    expect(await handlePageViewEvent({ path: '' }, SOURCE, repository)).toBe('skipped')
+    expect(await handlePageViewEvent({ path: 42 }, SOURCE, repository)).toBe('skipped')
     expect(repository.insertPageView).not.toHaveBeenCalled()
   })
 })

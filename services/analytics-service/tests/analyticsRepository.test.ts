@@ -1,37 +1,59 @@
 import type { Pool } from 'pg'
 import { describe, expect, it, vi } from 'vitest'
-import { createAnalyticsRepository } from '../src/analyticsRepository'
+import { INSERT_PAGE_VIEW, INSERT_SEARCH_EVENT, createAnalyticsRepository } from '../src/analyticsRepository'
+import type { MessageSource } from '../src/types'
 
-function createPool() {
+const SOURCE: MessageSource = { topic: 'newscore.search.events', partition: 2, offset: '41' }
+
+function createPool(rowCount = 1) {
   return {
-    query: vi.fn().mockResolvedValue({ rowCount: 1 }),
+    query: vi.fn().mockResolvedValue({ rowCount }),
     end: vi.fn().mockResolvedValue(undefined),
   }
 }
 
 describe('createAnalyticsRepository', () => {
-  it('inserts a search event with the expected SQL and parameters', async () => {
+  it('passes the search event and its Kafka origin as parameters', async () => {
     const pool = createPool()
     const repository = createAnalyticsRepository(pool as unknown as Pool)
 
-    await repository.insertSearchEvent({ query: 'klima', resultCount: 2, occurredAt: '2026-06-19T10:00:00Z' })
-
-    expect(pool.query).toHaveBeenCalledWith(
-      'INSERT INTO search_analytics (query, result_count, occurred_at) VALUES ($1, $2, $3)',
-      ['klima', 2, '2026-06-19T10:00:00Z'],
+    const inserted = await repository.insertSearchEvent(
+      { query: 'klima', resultCount: 2, occurredAt: '2026-06-19T10:00:00Z' },
+      SOURCE,
     )
+
+    expect(inserted).toBe(true)
+    expect(pool.query).toHaveBeenCalledWith(INSERT_SEARCH_EVENT, [
+      'klima',
+      2,
+      '2026-06-19T10:00:00Z',
+      'newscore.search.events',
+      2,
+      '41',
+    ])
   })
 
-  it('inserts a page view with the expected SQL and parameters', async () => {
+  it('passes the page view and its Kafka origin as parameters', async () => {
     const pool = createPool()
     const repository = createAnalyticsRepository(pool as unknown as Pool)
 
-    await repository.insertPageView({ path: '/article/1', occurredAt: '2026-06-20T10:00:00Z' })
+    const inserted = await repository.insertPageView({ path: '/article/1', occurredAt: '2026-06-20T10:00:00Z' }, SOURCE)
 
-    expect(pool.query).toHaveBeenCalledWith(
-      'INSERT INTO page_view_analytics (path, occurred_at) VALUES ($1, $2)',
-      ['/article/1', '2026-06-20T10:00:00Z'],
-    )
+    expect(inserted).toBe(true)
+    expect(pool.query).toHaveBeenCalledWith(INSERT_PAGE_VIEW, [
+      '/article/1',
+      '2026-06-20T10:00:00Z',
+      'newscore.search.events',
+      2,
+      '41',
+    ])
+  })
+
+  it('reports false when the database ignored the insert as a duplicate', async () => {
+    const repository = createAnalyticsRepository(createPool(0) as unknown as Pool)
+
+    expect(await repository.insertSearchEvent({ query: 'x', resultCount: 0, occurredAt: '2026-06-19T10:00:00Z' }, SOURCE)).toBe(false)
+    expect(await repository.insertPageView({ path: '/', occurredAt: '2026-06-19T10:00:00Z' }, SOURCE)).toBe(false)
   })
 
   it('closes the underlying pool', async () => {
