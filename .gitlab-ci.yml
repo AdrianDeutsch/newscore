@@ -1,6 +1,16 @@
-# NewsCore CI pipeline.
-# Stages mirror the project standard: validate -> test -> build -> security -> deploy.
-# Jobs use `rules`/`needs` so unaffected apps are skipped and the graph stays fast.
+# GitLab CI pipeline for the deploy path — a design, not a pipeline that has run.
+#
+# This repository is built and tested by GitHub Actions (.github/workflows/ci.yml). There is no
+# GitLab project behind this file, so nothing in it has ever been executed. Known gaps that would
+# have to be closed first:
+#   - deploy:prod needs deploy:staging, but the two run on different branches (main / develop);
+#   - the deploy jobs call `argocd` from an image that only ships kubectl;
+#   - `argocd app set --helm-set` changes the release imperatively; with GitOps the image tag
+#     would be committed to the values file instead;
+#   - analytics-service, the Varnish tests and the end-to-end suite have no jobs here;
+#   - REGISTRY and the environment URLs are placeholders.
+#
+# Stages: validate -> test -> build -> security -> deploy-staging -> deploy-prod.
 
 stages:
   - validate
@@ -19,7 +29,7 @@ variables:
 # ──────────────────────────────────────────────────────────────────────────
 lint:frontend:
   stage: validate
-  image: node:22-alpine
+  image: node:24-alpine
   script:
     - cd apps/frontend
     - npm ci
@@ -69,7 +79,7 @@ test:integration:java:
 
 test:unit:frontend:
   stage: test
-  image: node:22-alpine
+  image: node:24-alpine
   script:
     - cd apps/frontend
     - npm ci

@@ -17,4 +17,11 @@ if [ -f "apps/api-gateway/mvnw" ] && \
   (cd apps/api-gateway && ./mvnw checkstyle:check -q)
 fi
 
+# analytics-service lint — only when its sources are staged and deps are installed
+if [ -d "services/analytics-service/node_modules" ] && \
+   git diff --cached --name-only | grep -q "^services/analytics-service/"; then
+  echo "  → ESLint (analytics-service)"
+  (cd services/analytics-service && npm run lint)
+fi
+
 echo "✅ [pre-commit] All checks passed."
