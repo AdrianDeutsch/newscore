@@ -2,17 +2,22 @@ name: newscore
 
 # One-command demo stack: `docker compose up --build`
 #   - elasticsearch    (search index)           -> http://localhost:9200
-#   - kafka            (event bus, KRaft)        -> localhost:9092
+#   - kafka            (event bus, KRaft)        -> localhost:9094 from the host (kafka:9092 inside)
+#   - schema-registry  (Avro schemas)            -> http://localhost:8081
 #   - postgres         (analytics store)         -> localhost:5432
 #   - api-gateway      (Spring Boot GraphQL BFF) -> http://localhost:8080/graphiql
 #   - analytics-service(Kafka -> Postgres)
-#   - frontend         (Nuxt 3 SSR)             -> http://localhost:3000
+#   - frontend         (Nuxt SSR)                -> http://localhost:3000
 #
 # The gateway runs with the "elasticsearch,kafka" profiles: it indexes articles into ES, emits
-# search.executed events and consumes article.events (re-index + cache eviction). The
-# analytics-service writes search analytics into PostgreSQL.
+# search and page-view events and consumes article events (re-index + cache eviction). The
+# analytics-service writes search and page-view analytics into PostgreSQL.
 #
 # Simulate a CMS publish:  curl -XPOST http://localhost:8080/internal/cms/articles/1/publish
+#
+# With the edge cache in front (Apache -> Varnish -> frontend on http://localhost:8088), including
+# cache invalidation on article events:
+#   NEWSCORE_VARNISH_PURGE_ENABLED=true docker compose --profile edge up --build
 
 services:
   elasticsearch:
@@ -49,7 +54,8 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      # Topics are declared by the api-gateway (KafkaTopicsConfig), never created implicitly.
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
     healthcheck:
       test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
       interval: 10s
@@ -107,6 +113,10 @@ services:
       SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      # Send PURGE to Varnish on article events. Off unless the edge profile is running; with it
+      # switched on and no Varnish there, every article event would log a failed purge.
+      NEWSCORE_VARNISH_PURGE_ENABLED: ${NEWSCORE_VARNISH_PURGE_ENABLED:-false}
+      NEWSCORE_VARNISH_BASE_URL: http://varnish:80
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -143,6 +153,9 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      # The gateway creates the topics on startup; the consumer refuses to start without them.
+      api-gateway:
+        condition: service_healthy
     restart: on-failure
     networks: [newscore]
 
@@ -153,24 +166,31 @@ services:
     ports:
       - "3000:3000"
     environment:
-      # SSR resolves the gateway via the internal service name; the browser uses the published port.
-      NUXT_GRAPHQL_ENDPOINT: http://api-gateway:8080/graphql
-      NUXT_PUBLIC_GRAPHQL_ENDPOINT: http://localhost:8080/graphql
-      NUXT_PUBLIC_PAGEVIEW_ENDPOINT: http://localhost:8080/events/pageview
+      # Server-side only. The browser talks to the frontend's own origin, which forwards /graphql
+      # and /events/pageview to the gateway.
+      NUXT_GATEWAY_URL: http://api-gateway:8080
     depends_on:
       api-gateway:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
     networks: [newscore]
 
-  # ---- Caching edge (Epic 3) — start with: docker compose --profile edge up ----
-  # client -> Apache (:8088, TLS/gzip/security headers) -> Varnish (cache) -> frontend
+  # ---- Caching edge — start with: docker compose --profile edge up ----
+  # client -> Apache (:8088, gzip/security headers) -> Varnish (cache) -> frontend
   varnish:
-    image: varnish:7.5
+    image: varnish:7.7
     profiles: [edge]
     volumes:
-      - ./infrastructure/varnish/default.vcl:/etc/varnish/default.vcl:ro
+      # default.vcl (backend) includes newscore.vcl (rules); tests/ holds the varnishtest cases.
+      - ./infrastructure/varnish:/etc/varnish:ro
     depends_on:
-      - frontend
+      frontend:
+        condition: service_healthy
     networks: [newscore]
 
   apache:

@@ -1,0 +1,91 @@
+varnishtest "PURGE invalidates a path for every host and query variant, and nothing else"
+
+server s1 {
+    rxreq
+    expect req.url == "/article/1"
+    txresp -body "v1"
+
+    rxreq
+    expect req.url == "/"
+    txresp -body "home v1"
+
+    rxreq
+    expect req.url == "/?category=politik"
+    txresp -body "politik v1"
+
+    rxreq
+    expect req.url == "/article/2"
+    txresp -body "other"
+
+    # After the invalidation the origin is asked again for exactly these three.
+    rxreq
+    expect req.url == "/article/1"
+    txresp -body "v2"
+
+    rxreq
+    expect req.url == "/"
+    txresp -body "home v2"
+
+    rxreq
+    expect req.url == "/?category=politik"
+    txresp -body "politik v2"
+} -start
+
+varnish v1 -vcl+backend {
+    include "/etc/varnish/newscore.vcl";
+} -start
+
+# Pages are cached under the public host name ...
+client c1 {
+    txreq -url "/article/1" -hdr "Host: www.newscore.example"
+    rxresp
+    expect resp.body == "v1"
+    txreq -url "/" -hdr "Host: www.newscore.example"
+    rxresp
+    expect resp.body == "home v1"
+    txreq -url "/?category=politik" -hdr "Host: www.newscore.example"
+    rxresp
+    expect resp.body == "politik v1"
+    txreq -url "/article/2" -hdr "Host: www.newscore.example"
+    rxresp
+    expect resp.body == "other"
+} -run
+
+# ... while the gateway talks to Varnish under its internal service name.
+client c2 {
+    txreq -req PURGE -url "/article/1" -hdr "Host: varnish"
+    rxresp
+    expect resp.status == 200
+
+    txreq -req PURGE -url "/" -hdr "Host: varnish"
+    rxresp
+    expect resp.status == 200
+
+    # A path that would turn into a wildcard is refused instead of banning everything.
+    txreq -req PURGE -url "/article/.*" -hdr "Host: varnish"
+    rxresp
+    expect resp.status == 400
+} -run
+
+client c3 {
+    txreq -url "/article/1" -hdr "Host: www.newscore.example"
+    rxresp
+    expect resp.http.X-Cache == "MISS"
+    expect resp.body == "v2"
+
+    txreq -url "/" -hdr "Host: www.newscore.example"
+    rxresp
+    expect resp.http.X-Cache == "MISS"
+    expect resp.body == "home v2"
+
+    txreq -url "/?category=politik" -hdr "Host: www.newscore.example"
+    rxresp
+    expect resp.http.X-Cache == "MISS"
+    expect resp.body == "politik v2"
+
+    # The untouched article is still served from the cache.
+    txreq -url "/article/2" -hdr "Host: www.newscore.example"
+    rxresp
+    expect resp.http.X-Cache == "HIT"
+    expect resp.body == "other"
+} -run
