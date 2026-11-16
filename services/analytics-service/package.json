@@ -9,7 +9,7 @@
     "dev": "tsc -p tsconfig.json && node dist/index.js",
     "lint": "eslint .",
     "test:unit": "vitest",
-    "test:integration": "vitest run --config vitest.integration.config.ts"
+    "test:integration": "vitest run --config vitest.integration.config.mts"
   },
   "dependencies": {
     "@kafkajs/confluent-schema-registry": "^4.1.0",
