@@ -12,9 +12,10 @@ import org.springframework.context.annotation.Configuration;
  * Application-level caching with Caffeine (see ADR-003).
  *
  * <p>Provides short-lived in-process caches for the hot read paths. Varnish remains the primary
- * edge cache; this second tier reduces repeated resolver work on edge cache misses. TTL is kept
- * short so a missing active invalidation (planned for the Kafka iteration) cannot serve stale
- * content for long.</p>
+ * edge cache; this second tier saves repeated calls to the article source on edge cache misses.
+ * Entries are evicted when an article event arrives ({@code ArticleEventConsumer}); the short TTL
+ * bounds staleness when no event bus is running. Statistics are recorded so hit and miss counts
+ * show up as {@code cache_gets_total} on the Prometheus endpoint.</p>
  */
 @Configuration
 @EnableCaching
@@ -31,7 +32,8 @@ public class CachingConfig {
         CaffeineCacheManager cacheManager = new CaffeineCacheManager(ARTICLE_CACHE, ARTICLES_CACHE);
         cacheManager.setCaffeine(Caffeine.newBuilder()
                 .maximumSize(1_000)
-                .expireAfterWrite(Duration.ofMinutes(5)));
+                .expireAfterWrite(Duration.ofMinutes(5))
+                .recordStats());
         return cacheManager;
     }
 }

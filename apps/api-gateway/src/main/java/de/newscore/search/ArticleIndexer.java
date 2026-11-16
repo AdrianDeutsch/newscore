@@ -11,8 +11,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * Indexes articles into ElasticSearch. On startup it (re)builds the {@code articles} index from the
- * {@link ArticleService} corpus. In a later iteration this will be driven by Kafka
- * {@code article.published} events (Epic 4) instead of a bulk reindex.
+ * {@link ArticleService} corpus; afterwards single articles are re-indexed or removed when the
+ * {@code ArticleEventConsumer} receives an article event.
  */
 @Component
 @Profile("elasticsearch")

@@ -8,9 +8,9 @@ import java.util.Optional;
 /**
  * Read access to editorial articles.
  *
- * <p>This abstraction decouples the GraphQL resolvers from the concrete data source. The current
- * implementation serves in-memory mock data; a future implementation can fetch from the Sophora CMS
- * or a repository without any change to the resolver layer (see ADR-002).</p>
+ * <p>This abstraction decouples the GraphQL resolvers from the concrete data source. The default
+ * implementation serves in-memory demo data; under the {@code sophora} profile an HTTP adapter
+ * takes over without any change to the resolver layer (see ADR-002, ADR-010).</p>
  */
 public interface ArticleService {
 

@@ -1,5 +1,6 @@
 package de.newscore.service;
 
+import de.newscore.config.CachingConfig;
 import de.newscore.domain.Article;
 import de.newscore.domain.ArticleConnection;
 import de.newscore.domain.Category;
@@ -38,13 +39,13 @@ public class InMemoryArticleService implements ArticleService {
     }
 
     @Override
-    @Cacheable("article")
+    @Cacheable(CachingConfig.ARTICLE_CACHE)
     public Optional<Article> findById(String id) {
         return articles.stream().filter(a -> a.id().equals(id)).findFirst();
     }
 
     @Override
-    @Cacheable("articles")
+    @Cacheable(CachingConfig.ARTICLES_CACHE)
     public ArticleConnection findArticles(String categorySlug, int limit, int offset) {
         List<Article> filtered = filterByCategory(categorySlug);
         int totalCount = filtered.size();

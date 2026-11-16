@@ -1,13 +1,12 @@
 package de.newscore.kafka;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.Instant;
 
 /**
  * Analytics event emitted whenever a search query is executed. Published to
  * {@link KafkaTopics#SEARCH_EVENTS} and consumed by the analytics-service.
  *
- * <p>{@code occurredAt} is serialized as an ISO-8601 string (not an epoch number) so polyglot
+ * <p>On the wire {@code occurredAt} is an ISO-8601 string (not an epoch number) so polyglot
  * consumers (e.g. the Node analytics-service writing a {@code timestamptz}) parse it directly.</p>
  *
  * @param query       the search term
@@ -17,7 +16,7 @@ import java.time.Instant;
 public record SearchExecutedEvent(
         String query,
         int resultCount,
-        @JsonFormat(shape = JsonFormat.Shape.STRING) Instant occurredAt) {
+        Instant occurredAt) {
 
     /** Convenience factory using the current instant. */
     public static SearchExecutedEvent of(String query, int resultCount) {
