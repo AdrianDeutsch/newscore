@@ -1,0 +1,49 @@
+varnishtest "pages are cached, origin errors are not"
+
+server s1 {
+    rxreq
+    expect req.url == "/article/1"
+    txresp -body "article one"
+
+    rxreq
+    expect req.url == "/broken"
+    txresp -status 500 -body "boom"
+
+    rxreq
+    expect req.url == "/broken"
+    txresp -status 200 -body "recovered"
+} -start
+
+varnish v1 -vcl+backend {
+    include "/etc/varnish/newscore.vcl";
+} -start
+
+client c1 {
+    # First request reaches the origin, the second is answered from the cache.
+    txreq -url "/article/1"
+    rxresp
+    expect resp.status == 200
+    expect resp.http.X-Cache == "MISS"
+
+    txreq -url "/article/1"
+    rxresp
+    expect resp.http.X-Cache == "HIT"
+    expect resp.body == "article one"
+    # The bookkeeping header for bans is not leaked to clients.
+    expect resp.http.x-url == <undef>
+
+    # A cookie that is not a session cookie must not defeat the cache.
+    txreq -url "/article/1" -hdr "Cookie: consent=yes"
+    rxresp
+    expect resp.http.X-Cache == "HIT"
+
+    # A 500 from the origin is delivered but not stored: the next request sees the recovery.
+    txreq -url "/broken"
+    rxresp
+    expect resp.status == 500
+
+    txreq -url "/broken"
+    rxresp
+    expect resp.status == 200
+    expect resp.body == "recovered"
+} -run

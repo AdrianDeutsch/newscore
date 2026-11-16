@@ -67,6 +67,7 @@ components:
       SPRING_PROFILES_ACTIVE: "elasticsearch,kafka"
       SPRING_ELASTICSEARCH_URIS: "http://elasticsearch:9200"
       SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+      SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
     resources:
       requests:
         cpu: 250m
@@ -94,8 +95,9 @@ components:
     port: 3000
     expose: true # published through the ingress
     env:
-      NUXT_GRAPHQL_ENDPOINT: "http://newscore-api-gateway:8080/graphql"
-      NUXT_PUBLIC_GRAPHQL_ENDPOINT: "https://newscore.example.com/graphql"
+      # Server-side only; the browser reaches GraphQL through the frontend's own origin.
+      # Assumes the release name "newscore" (Service = <release>-api-gateway).
+      NUXT_GATEWAY_URL: "http://newscore-api-gateway:8080"
     resources:
       requests:
         cpu: 100m
