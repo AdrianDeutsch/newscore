@@ -5,16 +5,13 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/main.css'],
 
-  // GraphQL endpoint. The private value is used during SSR (server -> api-gateway via internal DNS),
-  // the public value during client-side navigation (browser -> host-published port). Override with
-  // NUXT_GRAPHQL_ENDPOINT and NUXT_PUBLIC_GRAPHQL_ENDPOINT (see docker-compose.yml).
+  // Base URL of the api-gateway. Server-only: the browser never talks to the gateway directly. During
+  // SSR the urql client calls it straight away; in the browser GraphQL requests and page-view beacons
+  // go to this site's own /graphql and /events/pageview, which server/routes/ forwards to the gateway.
+  // That keeps everything same-origin (no CORS, a strict Content-Security-Policy) and means the
+  // gateway does not have to be reachable from outside. Override with NUXT_GATEWAY_URL.
   runtimeConfig: {
-    graphqlEndpoint: 'http://localhost:8080/graphql',
-    public: {
-      graphqlEndpoint: 'http://localhost:8080/graphql',
-      // Page-view beacon target (api-gateway REST endpoint). Override with NUXT_PUBLIC_PAGEVIEW_ENDPOINT.
-      pageviewEndpoint: 'http://localhost:8080/events/pageview',
-    },
+    gatewayUrl: 'http://localhost:8080',
   },
 
   app: {
@@ -24,7 +21,7 @@ export default defineNuxtConfig({
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { name: 'description', content: 'NewsCore — cloud-natives, hochverfügbares Nachrichtenportal.' },
+        { name: 'description', content: 'NewsCore — Demo-Nachrichtenportal: Nuxt SSR über ein GraphQL-Gateway.' },
       ],
     },
   },

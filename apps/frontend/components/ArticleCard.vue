@@ -1,15 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Article } from '~/types/article'
+import { formatDate } from '~/utils/formatDate'
 
 const props = defineProps<{ article: Article }>()
 
 const PLACEHOLDER = '/images/placeholder.svg'
 
 const imageSrc = computed(() => props.article.imageUrl || PLACEHOLDER)
-const formattedDate = computed(() =>
-  new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium' }).format(new Date(props.article.publishedAt)),
-)
+const formattedDate = computed(() => formatDate(props.article.publishedAt))
 </script>
 
 <template>

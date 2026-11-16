@@ -14,6 +14,9 @@ export default defineConfig({
   },
   test: {
     environment: 'happy-dom',
+    // Run in a zone that is neither the site's (Europe/Berlin) nor the usual CI default (UTC), so a
+    // date that is formatted without an explicit time zone gives a visibly wrong result everywhere.
+    env: { TZ: 'America/New_York' },
     globals: true,
     include: ['tests/unit/**/*.test.ts'],
     reporters: ['default', 'junit'],
@@ -23,8 +26,9 @@ export default defineConfig({
       reporter: ['text', 'html', 'cobertura'],
       reportsDirectory: 'coverage',
       // Scope coverage to the unit-testable layer (pure logic + presentational components).
-      // Nuxt-context glue (plugins, composables, pages) is covered by integration/E2E later.
-      include: ['components/**', 'services/**'],
+      // Nuxt-context glue (plugins, composables, pages, server routes) is not unit-tested; it runs
+      // in the browser-driven end-to-end suite (e2e/ at the repository root).
+      include: ['components/**', 'services/**', 'server/utils/**', 'utils/**'],
       thresholds: {
         lines: 80,
         functions: 80,

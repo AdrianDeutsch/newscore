@@ -1,19 +1,24 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useArticle } from '~/composables/useArticle'
+import { formatDateTime } from '~/utils/formatDate'
 
 const route = useRoute()
 const id = route.params.id as string
 
-const { data: article, status } = await useArticle(id)
+const { data: article, error } = await useArticle(id)
 
-const formattedDate = computed(() =>
-  article.value
-    ? new Intl.DateTimeFormat('de-DE', { dateStyle: 'long', timeStyle: 'short' }).format(
-        new Date(article.value.publishedAt),
-      )
-    : '',
-)
+// Answer with a real HTTP status instead of rendering "not found" into a 200 page: crawlers and
+// the edge cache would otherwise treat the missing article as a valid page. A gateway failure is
+// not "not found" either — it becomes a 502, which the edge cache does not store.
+if (error.value) {
+  throw createError({ statusCode: 502, statusMessage: 'Inhalte konnten nicht geladen werden', fatal: true })
+}
+if (!article.value) {
+  throw createError({ statusCode: 404, statusMessage: 'Artikel nicht gefunden', fatal: true })
+}
+
+const formattedDate = computed(() => (article.value ? formatDateTime(article.value.publishedAt) : ''))
 
 useHead(() => ({
   title: article.value ? `${article.value.title} · NewsCore` : 'NewsCore',
@@ -56,11 +61,4 @@ useHead(() => ({
       <li v-for="tag in article.tags" :key="tag">#{{ tag }}</li>
     </ul>
   </article>
-
-  <div v-else-if="status === 'pending'" class="state">Lädt…</div>
-
-  <div v-else class="state state--error">
-    <p>Artikel nicht gefunden.</p>
-    <NuxtLink to="/">Zur Startseite</NuxtLink>
-  </div>
 </template>

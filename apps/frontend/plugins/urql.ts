@@ -4,14 +4,14 @@ import { Client, cacheExchange, fetchExchange, ssrExchange } from '@urql/core'
  * Provides a configured urql client as {@code $urql}.
  *
  * <p>SSR data is transferred to the client through Nuxt's payload via {@code ssrExchange}, so the
- * browser hydrates without an immediate refetch (see ADR-001). The endpoint differs between server
- * (internal DNS) and client (host-published port), driven by runtime config.</p>
+ * browser hydrates without an immediate refetch (see ADR-001). On the server the client calls the
+ * gateway directly; in the browser it calls this site's own {@code /graphql}, which
+ * {@code server/routes/graphql.post.ts} forwards.</p>
  */
 export default defineNuxtPlugin((nuxtApp) => {
-  const config = useRuntimeConfig()
-  const url = (import.meta.server
-    ? config.graphqlEndpoint
-    : config.public.graphqlEndpoint) as string
+  const url = import.meta.server
+    ? `${useRuntimeConfig().gatewayUrl}/graphql`
+    : '/graphql'
 
   const ssr = ssrExchange({ isClient: import.meta.client })
 

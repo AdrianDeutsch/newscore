@@ -43,6 +43,13 @@ export default tseslint.config(
         useRouter: 'readonly',
         useHead: 'readonly',
         navigateTo: 'readonly',
+        createError: 'readonly',
+        clearError: 'readonly',
+        // Nitro/h3 helpers auto-imported in server/.
+        defineEventHandler: 'readonly',
+        defineNitroPlugin: 'readonly',
+        proxyRequest: 'readonly',
+        setResponseHeader: 'readonly',
       },
     },
     rules: {

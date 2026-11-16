@@ -23,8 +23,9 @@ describe('BreadcrumbNav', () => {
 
     const items = wrapper.findAll('.breadcrumb__item')
     expect(items).toHaveLength(3)
-    expect(items[0].find('a').exists()).toBe(true)
-    expect(items[2].find('a').exists()).toBe(false)
-    expect(items[2].find('[aria-current="page"]').text()).toBe('Aktueller Artikel')
+    const [first, , current] = items
+    expect(first?.find('a').exists()).toBe(true)
+    expect(current?.find('a').exists()).toBe(false)
+    expect(current?.find('[aria-current="page"]').text()).toBe('Aktueller Artikel')
   })
 })
