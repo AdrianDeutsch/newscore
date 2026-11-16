@@ -5,8 +5,8 @@ import de.newscore.domain.SearchResult;
 /**
  * Full-text search over articles.
  *
- * <p>The current implementation performs an in-memory substring match. A future implementation will
- * delegate to ElasticSearch (Epic 3) without changing this contract.</p>
+ * <p>The default implementation performs an in-memory substring match; under the
+ * {@code elasticsearch} profile the ElasticSearch implementation takes over (see ADR-004).</p>
  */
 public interface SearchService {
 

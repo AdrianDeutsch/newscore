@@ -1,5 +1,6 @@
 package de.newscore.kafka;
 
+import org.apache.kafka.common.TopicPartition;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -15,6 +16,10 @@ import org.springframework.util.backoff.FixedBackOff;
  * deserialize), they are routed to the {@code <topic>.DLT} dead-letter topic by the
  * {@link DeadLetterPublishingRecoverer} instead of blocking the partition. Spring Boot wires this
  * {@link DefaultErrorHandler} bean into the auto-configured listener container factory.</p>
+ *
+ * <p>The dead-letter topic name is resolved here rather than left to the library default: Spring
+ * Kafka changed that default from {@code .DLT} to {@code -dlt}, which would silently route poison
+ * records past the topic declared in {@link KafkaTopicsConfig} (see docs/defects/DEFECT-004).</p>
  */
 @Configuration
 @Profile("kafka")
@@ -25,7 +30,10 @@ public class KafkaErrorHandlingConfig {
 
     @Bean
     public DefaultErrorHandler kafkaErrorHandler(KafkaOperations<Object, Object> kafkaOperations) {
-        DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(kafkaOperations);
+        DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(
+                kafkaOperations,
+                (record, exception) ->
+                        new TopicPartition(record.topic() + KafkaTopics.DLT_SUFFIX, record.partition()));
         return new DefaultErrorHandler(recoverer, new FixedBackOff(RETRY_INTERVAL_MS, MAX_RETRIES));
     }
 }

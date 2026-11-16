@@ -11,6 +11,8 @@ import de.newscore.web.PageViewController.PageViewRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -39,6 +41,26 @@ class PageViewControllerTest {
 
         assertThat(response.getStatusCode().value()).isEqualTo(400);
         verifyNoInteractions(eventPublisher);
+    }
+
+    @ParameterizedTest(name = "\"{0}\" is rejected")
+    @ValueSource(strings = {"article/1", "https://evil.example/x", "//evil.example/x"})
+    @DisplayName("a path that is not site-relative is rejected and emits nothing")
+    void pageView_notSiteRelative_returnsBadRequest(String path) {
+        var response = controller.pageView(new PageViewRequest(path));
+
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    @DisplayName("a path of 2048 characters is accepted, one more is rejected")
+    void pageView_pathLength_isBounded() {
+        String longest = "/" + "a".repeat(2047);
+
+        assertThat(controller.pageView(new PageViewRequest(longest)).getStatusCode().value()).isEqualTo(202);
+        assertThat(controller.pageView(new PageViewRequest(longest + "a")).getStatusCode().value()).isEqualTo(400);
+        verify(eventPublisher).publishPageView(argThat(event -> event.path().equals(longest)));
     }
 
     @Test

@@ -9,8 +9,11 @@ public final class KafkaTopics {
     /** Editorial lifecycle events (key = article id). Consumed for ES indexing + cache eviction. */
     public static final String ARTICLE_EVENTS = "newscore.article.events";
 
+    /** Suffix appended to a topic name to form its dead-letter topic. */
+    public static final String DLT_SUFFIX = ".DLT";
+
     /** Dead-letter topic for {@link #ARTICLE_EVENTS} (poison / unprocessable records). */
-    public static final String ARTICLE_EVENTS_DLT = "newscore.article.events.DLT";
+    public static final String ARTICLE_EVENTS_DLT = ARTICLE_EVENTS + DLT_SUFFIX;
 
     /** Search analytics events, consumed by the analytics-service. */
     public static final String SEARCH_EVENTS = "newscore.search.events";
