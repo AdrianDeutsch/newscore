@@ -21,4 +21,10 @@ if [ -d "apps/frontend/node_modules" ]; then
   (cd apps/frontend && npm run test:unit -- --run)
 fi
 
+# analytics-service unit tests
+if [ -d "services/analytics-service/node_modules" ]; then
+  echo "  → analytics-service unit tests (vitest)"
+  (cd services/analytics-service && npm run test:unit -- --run)
+fi
+
 echo "✅ [pre-push] All tests passed. Push allowed."
