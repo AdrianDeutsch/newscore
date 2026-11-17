@@ -1,8 +1,9 @@
 import { Client } from 'pg'
 
 /**
- * Addresses of the compose stack as published to the host (docker-compose.yml). The suite never
- * starts or stops containers; it expects, from the repository root,
+ * Addresses of the compose stack as published to the host (docker-compose.yml). The suite does not
+ * start the stack (only gateway-down.spec.ts runs one extra frontend container from the stack's
+ * image, via the Docker CLI on port 3099); it expects, from the repository root,
  * `docker compose --env-file stack-full.env --profile edge --profile observability up --build --wait`.
  */
 export const stack = {

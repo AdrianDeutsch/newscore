@@ -56,7 +56,8 @@ class PageViewControllerTest {
 
     @ParameterizedTest(name = "\"{0}\" is accepted")
     @ValueSource(strings = {"/", "/article/1", "/?category=politik", "/search?q=klima+eu", "/search?q=%C3%A4rzte",
-        "/article/2?e2e=4f1c-9a", "/article/1#kommentare"})
+        "/article/2?e2e=4f1c-9a", "/article/1#kommentare", "/search?q=[klima]", "/search?q=a|b",
+        "/search?q={x}^`y`"})
     @DisplayName("paths as the router sends them are accepted")
     void pageView_routerPaths_areAccepted(String path) {
         assertThat(controller.pageView(new PageViewRequest(path)).getStatusCode().value()).isEqualTo(202);

@@ -31,7 +31,7 @@ der Datenbank, im Cache, in den Metriken und in den Traces.
 
 | Ebene | Tests | Gegen |
 |---|---:|---|
-| Gateway, Unit | 73 | Mocks |
+| Gateway, Unit | 76 | Mocks |
 | Gateway, Integration | 16 | Spring-Kontext, ElasticSearch 8.18 (Testcontainers), EmbeddedKafka mit Mock-Schema-Registry |
 | Frontend, Unit | 25 | Komponenten, Services, CSP-Berechnung, Datumsformat; gemockter GraphQL-Client |
 | Analytics, Unit | 26 | gemocktes PostgreSQL und Schema Registry |
@@ -181,7 +181,9 @@ End-to-End gegen den laufenden vollständigen Stack (siehe oben):
 cd e2e && npm ci && npx playwright install chromium && npm test
 ```
 
-Die End-to-End-Suite ([`e2e/`](e2e/)) startet keine Container. Sie prüft:
+Die End-to-End-Suite ([`e2e/`](e2e/)) startet den Stack nicht selbst. Nur `gateway-down.spec.ts`
+startet einen Hilfscontainer aus dem Frontend-Image des Stacks (braucht die Docker-CLI und Port 3099).
+Die Suite prüft:
 
 | Datei | Was |
 |---|---|
