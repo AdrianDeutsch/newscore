@@ -42,6 +42,13 @@ const grafanaAuth = { Authorization: `Basic ${Buffer.from('admin:admin').toStrin
  * exists.
  */
 test.describe('observability', () => {
+  test('the gateway reports itself UP, ElasticSearch connection included', async () => {
+    const response = await fetch(`${stack.gateway}/actuator/health`)
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ status: 'UP', groups: ['liveness', 'readiness'] })
+  })
+
   test('the gateway exports every metric that an alert rule or the dashboard queries', async () => {
     // At least one HTTP request, so the request metrics exist.
     await graphql('{ articles(limit: 1) { totalCount } }')

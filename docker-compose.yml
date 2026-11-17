@@ -21,7 +21,9 @@ name: newscore
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    # Keep in step with the Java client version managed by Spring Boot (elasticsearch-client.version
+    # in spring-boot-dependencies) and with ElasticsearchSearchIntegrationTest.
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.18.8
     environment:
       discovery.type: single-node
       xpack.security.enabled: "false"
@@ -128,7 +130,10 @@ services:
       schema-registry:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "bash -c '</dev/tcp/127.0.0.1/8080' 2>/dev/null || exit 1"]
+      # Healthy means the health endpoint says UP (including the ElasticSearch connection under the
+      # elasticsearch profile), not merely that the port is open. The JRE image has no curl, so bash
+      # sends the request itself.
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080 && printf \"GET /actuator/health HTTP/1.0\\r\\n\\r\\n\" >&3 && grep -q \"\\\"status\\\":\\\"UP\\\"\" <&3'"]
       interval: 10s
       timeout: 3s
       retries: 12
