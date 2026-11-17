@@ -12,7 +12,7 @@ echo "🧪 [pre-push] Running unit tests before push..."
 # API-Gateway unit tests
 if [ -f "apps/api-gateway/mvnw" ]; then
   echo "  → Java unit tests"
-  (cd apps/api-gateway && ./mvnw test -q --no-transfer-progress)
+  (cd apps/api-gateway && ./mvnw test -q --no-transfer-progress -DexcludedGroups=integration)
 fi
 
 # Frontend unit tests

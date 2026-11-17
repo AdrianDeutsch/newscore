@@ -19,7 +19,8 @@ Caching: [ADR-003](../../docs/adr/ADR-003-caffeine-caching.md)
 | Ereignisse | Profil `kafka`: Avro über die Confluent Schema Registry, Dead-Letter-Topic für nicht lesbare Nachrichten ([ADR-011](../../docs/adr/ADR-011-avro-schema-registry.md)) |
 | Aktualisierung | Ein Artikel-Ereignis leert die Caffeine-Caches, indiziert den Artikel neu bzw. löscht ihn aus dem Index und schickt `PURGE` an Varnish ([ADR-008](../../docs/adr/ADR-008-varnish-caching.md)) |
 | CMS-Simulator | `POST /internal/cms/articles/{id}/{publish\|update\|delete}` erzeugt ein Artikel-Ereignis, wie es ein CMS-Webhook täte |
-| Pageviews | `POST /events/pageview` (nur seitenrelative Pfade bis 2048 Zeichen) → Kafka |
+| Pageviews | `POST /events/pageview` → Kafka. Angenommen werden nur seitenrelative Pfade aus URL-Zeichen (wie der Router sie schickt) bis 2048 Zeichen |
+| Ereignis-IDs | Such- und Seitenaufruf-Ereignisse bekommen beim Erzeugen eine UUID; der analytics-service speichert damit idempotent ([ADR-013](../../docs/adr/ADR-013-analytics-zustellung.md)) |
 | Observability | Actuator, Prometheus-Endpoint mit Histogrammen, JSON-Logs im Profil `json`, Traces per OTLP ([ADR-007](../../docs/adr/ADR-007-observability.md), [ADR-009](../../docs/adr/ADR-009-distributed-tracing.md)) |
 
 ### Profile
@@ -62,7 +63,7 @@ query {
 
 | Ebene | Anzahl | Werkzeuge | Ort |
 |---|---|---|---|
-| Unit | 58 | JUnit 5, Mockito, AssertJ | `src/test/java/de/newscore/unit/` |
+| Unit | 73 | JUnit 5, Mockito, AssertJ | `src/test/java/de/newscore/unit/` |
 | Integration | 16 | `GraphQlTester`, Testcontainers (ElasticSearch 8.18), EmbeddedKafka mit Mock-Schema-Registry, `MockRestServiceServer` | `src/test/java/de/newscore/integration/` |
 
 ```bash

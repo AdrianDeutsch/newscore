@@ -51,4 +51,4 @@ Der Build bricht ab, nacheinander an drei Stellen:
 
 ## Regressionstest
 
-CI-Job `e2e` in `.github/workflows/ci.yml`: `docker compose --profile edge up --build --wait`, danach die Suite in `e2e/`.
+CI-Job `e2e` in `.github/workflows/ci.yml`: `docker compose --env-file stack-full.env --profile edge --profile observability up --build --wait --wait-timeout 600`, danach die Suite in `e2e/`.

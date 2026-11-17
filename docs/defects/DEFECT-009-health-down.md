@@ -48,5 +48,5 @@ Dieselbe Prüfung deckte einen zweiten Fehler auf, den erst das Update auf Sprin
 
 - `apps/api-gateway/src/test/java/de/newscore/integration/HealthIntegrationTest.java` (Standardprofil: UP, ohne ElasticSearch-Komponente).
 - `ElasticsearchSearchIntegrationTest.health_includesElasticsearch` (Profil `elasticsearch`: Komponente UP gegen einen echten Server).
-- `e2e/tests/observability.spec.ts` („the gateway reports itself UP …“).
+- `e2e/tests/observability.spec.ts` („the gateway reports itself UP“): Gesamtstatus im Compose-Stack. Er sieht einen ElasticSearch-Check, der DOWN meldet, nicht aber einen abgeschalteten; das deckt `ElasticsearchSearchIntegrationTest` ab.
 - Beide Java-Tests schalten `show-components` ein: Ohne das antwortet `/actuator/health/<komponente>` immer mit 404, und eine Prüfung auf „nicht vorhanden“ könnte nie fehlschlagen.
