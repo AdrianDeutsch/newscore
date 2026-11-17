@@ -20,6 +20,7 @@ final class AvroEventMapper {
 
     static de.newscore.kafka.avro.SearchExecutedEvent toAvro(SearchExecutedEvent event) {
         return de.newscore.kafka.avro.SearchExecutedEvent.newBuilder()
+                .setEventId(event.eventId())
                 .setQuery(event.query())
                 .setResultCount(event.resultCount())
                 .setOccurredAt(event.occurredAt().toString())
@@ -28,6 +29,7 @@ final class AvroEventMapper {
 
     static de.newscore.kafka.avro.PageViewEvent toAvro(PageViewEvent event) {
         return de.newscore.kafka.avro.PageViewEvent.newBuilder()
+                .setEventId(event.eventId())
                 .setPath(event.path())
                 .setOccurredAt(event.occurredAt().toString())
                 .build();

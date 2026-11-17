@@ -4,6 +4,12 @@
   "name": "PageViewEvent",
   "doc": "User page-view analytics event (Epic 4 / ADR-011).",
   "fields": [
+    {
+      "name": "eventId",
+      "type": "string",
+      "default": "",
+      "doc": "Unique id of this event (UUID), the idempotency key in the analytics store. The default keeps the schema backward compatible; consumers fall back to the Kafka coordinates when it is empty."
+    },
     { "name": "path", "type": "string" },
     { "name": "occurredAt", "type": "string", "doc": "ISO-8601 timestamp" }
   ]

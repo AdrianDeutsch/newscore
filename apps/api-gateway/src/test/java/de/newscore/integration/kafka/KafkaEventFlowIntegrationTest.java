@@ -67,12 +67,14 @@ class KafkaEventFlowIntegrationTest {
     @Test
     @DisplayName("search-executed events are published as Avro to the search topic")
     void searchExecutedEvent_isPublishedAsAvro() {
-        eventPublisher.publishSearchExecuted(SearchExecutedEvent.of("klima", 2));
+        SearchExecutedEvent event = SearchExecutedEvent.of("klima", 2);
+        eventPublisher.publishSearchExecuted(event);
 
         try (Consumer<String, de.newscore.kafka.avro.SearchExecutedEvent> consumer = avroConsumer("search-it")) {
             consumer.subscribe(List.of(KafkaTopics.SEARCH_EVENTS));
             ConsumerRecord<String, de.newscore.kafka.avro.SearchExecutedEvent> record =
                     KafkaTestUtils.getSingleRecord(consumer, KafkaTopics.SEARCH_EVENTS, Duration.ofSeconds(15));
+            assertThat(record.value().getEventId()).isEqualTo(event.eventId());
             assertThat(record.value().getQuery()).isEqualTo("klima");
             assertThat(record.value().getResultCount()).isEqualTo(2);
         }

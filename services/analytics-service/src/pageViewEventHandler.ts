@@ -1,4 +1,5 @@
 import type { AnalyticsRepository } from './analyticsRepository'
+import { resolveEventId } from './eventId'
 import type { MessageSource, Outcome, PageViewEvent } from './types'
 
 /**
@@ -26,6 +27,7 @@ export async function handlePageViewEvent(
 
   const inserted = await repository.insertPageView(
     {
+      eventId: resolveEventId(e.eventId, source),
       path: e.path,
       occurredAt: e.occurredAt ?? new Date().toISOString(),
     },

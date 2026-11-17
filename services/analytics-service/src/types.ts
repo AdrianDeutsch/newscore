@@ -3,6 +3,8 @@
  * (Avro record `de.newscore.kafka.avro.SearchExecutedEvent`, decoded via the Schema Registry).
  */
 export interface SearchExecutedEvent {
+  /** Unique id set by the producer; the idempotency key in PostgreSQL. */
+  eventId: string
   query: string
   resultCount: number
   occurredAt: string
@@ -12,13 +14,17 @@ export interface SearchExecutedEvent {
  * Shape of the `newscore.user.events` payload (Avro record `de.newscore.kafka.avro.PageViewEvent`).
  */
 export interface PageViewEvent {
+  /** Unique id set by the producer; the idempotency key in PostgreSQL. */
+  eventId: string
   path: string
   occurredAt: string
 }
 
 /**
- * Where a message came from. Topic, partition and offset together identify one Kafka record, which
- * is what makes a second delivery of the same record recognisable.
+ * Where a message came from (topic, partition, offset). Stored with each row for tracing a row back
+ * to its record, and used as a fallback key for messages without eventId. Not the idempotency key
+ * itself: offsets start again at 0 when a topic is recreated, e.g. after a broker without
+ * persistent storage restarts (docs/defects/DEFECT-010).
  */
 export interface MessageSource {
   topic: string

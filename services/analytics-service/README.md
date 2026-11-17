@@ -16,8 +16,12 @@ Seitenaufruf       ──▶  newscore.user.events   ──▶  (kafkajs + pg)  
   übersprungen und geloggt.
 - **Alle anderen Fehler** (PostgreSQL oder Schema Registry nicht erreichbar) werden geworfen. kafkajs
   committet das Offset dann nicht und stellt die Nachricht erneut zu.
-- **Idempotent:** Jede Zeile speichert Topic, Partition und Offset der Nachricht unter einem
-  eindeutigen Schlüssel; eine zweite Zustellung derselben Nachricht schreibt keine zweite Zeile.
+- **Idempotent:** Der eindeutige Schlüssel ist die `eventId`, die das Gateway jedem Ereignis gibt.
+  Eine zweite Zustellung desselben Ereignisses schreibt keine zweite Zeile. Topic, Partition und
+  Offset werden als Herkunft mitgespeichert, sind aber kein Schlüssel: Nach einem Neustart von Kafka
+  ohne persistenten Speicher beginnen die Offsets wieder bei 0
+  ([DEFECT-010](../../docs/defects/DEFECT-010-idempotenzschluessel.md)). Nachrichten ohne `eventId`
+  bekommen einen Schlüssel aus den Koordinaten.
 - **Keine automatische Topic-Erstellung.** Die Topics legt das Gateway an. Fehlen sie, startet der
   Dienst nicht (im Compose-Stack wartet er deshalb auf das Gateway).
 
@@ -27,13 +31,15 @@ Seitenaufruf       ──▶  newscore.user.events   ──▶  (kafkajs + pg)  
 src/
 ├── config.ts                # Konfiguration aus Umgebungsvariablen
 ├── types.ts                 # Ereignis-Formen, Herkunft einer Nachricht, Ergebnis
+├── eventId.ts               # Idempotenzschlüssel: eventId oder Ersatz aus den Kafka-Koordinaten
 ├── messageProcessor.ts      # eine Nachricht: Rahmen prüfen, dekodieren, an den Handler, Fehlerklasse
 ├── searchEventHandler.ts    # Prüfung + Insert Suche
 ├── pageViewEventHandler.ts  # Prüfung + Insert Seitenaufruf
-├── analyticsRepository.ts   # SQL (INSERT … ON CONFLICT DO NOTHING) hinter einem Interface
+├── analyticsRepository.ts   # SQL (INSERT … ON CONFLICT (event_id) DO NOTHING) hinter einem Interface
 ├── eventConsumer.ts         # kafkajs-Verdrahtung
 └── index.ts                 # Einstieg, Graceful Shutdown
 sql/init.sql                 # Tabellen; im Compose-Stack beim ersten Start von PostgreSQL ausgeführt
+                             # (kein Migrationswerkzeug: nach Schemaänderungen `docker compose down -v`)
 ```
 
 ## Konfiguration
@@ -51,8 +57,8 @@ sql/init.sql                 # Tabellen; im Compose-Stack beim ersten Start von 
 ## Tests
 
 ```bash
-npm run test:unit -- --run --coverage   # 23 Tests, Abdeckungsgrenze 80 % Zeilen
-npm run test:integration                # 4 Tests gegen PostgreSQL 16 (Testcontainers, braucht Docker)
+npm run test:unit -- --run --coverage   # 26 Tests, Abdeckungsgrenze 80 % Zeilen
+npm run test:integration                # 5 Tests gegen PostgreSQL 16 (Testcontainers, braucht Docker)
 npm run lint
 npm run build
 ```
@@ -60,7 +66,8 @@ npm run build
 - **Unit:** alles in `src/` außer `index.ts` und `eventConsumer.ts`, die nur kafkajs und pg verbinden.
   PostgreSQL und die Schema Registry sind dort gemockt.
 - **Integration:** das SQL des Repositorys gegen PostgreSQL, initialisiert mit derselben `sql/init.sql`
-  wie im Compose-Stack. Geprüft wird unter anderem, dass dieselbe Nachricht nur einmal gespeichert wird.
+  wie im Compose-Stack. Geprüft wird unter anderem, dass dasselbe Ereignis nur einmal gespeichert wird
+  und ein neues Ereignis unter den Koordinaten eines alten trotzdem.
 - **End-to-End:** [`e2e/tests/events.spec.ts`](../../e2e/tests/events.spec.ts) prüft die ganze Kette
   vom GraphQL-Aufruf bzw. Seitenaufruf bis zur Zeile in PostgreSQL.
 

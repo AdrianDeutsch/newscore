@@ -4,6 +4,7 @@ import { handlePageViewEvent } from '../src/pageViewEventHandler'
 import type { MessageSource } from '../src/types'
 
 const SOURCE: MessageSource = { topic: 'newscore.user.events', partition: 1, offset: '12' }
+const EVENT_ID = '0b5c7a1e-3f0e-4a8e-9c1d-2f6b7a9e4c11'
 
 function createRepository() {
   return {
@@ -22,14 +23,14 @@ describe('handlePageViewEvent', () => {
 
   it('records a valid page view together with the Kafka record it came from', async () => {
     const outcome = await handlePageViewEvent(
-      { path: '/article/1', occurredAt: '2026-06-20T10:00:00Z' },
+      { eventId: EVENT_ID, path: '/article/1', occurredAt: '2026-06-20T10:00:00Z' },
       SOURCE,
       repository,
     )
 
     expect(outcome).toBe('recorded')
     expect(repository.insertPageView).toHaveBeenCalledWith(
-      { path: '/article/1', occurredAt: '2026-06-20T10:00:00Z' },
+      { eventId: EVENT_ID, path: '/article/1', occurredAt: '2026-06-20T10:00:00Z' },
       SOURCE,
     )
   })

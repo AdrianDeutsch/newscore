@@ -1,4 +1,5 @@
 import type { AnalyticsRepository } from './analyticsRepository'
+import { resolveEventId } from './eventId'
 import type { MessageSource, Outcome, SearchExecutedEvent } from './types'
 
 /**
@@ -26,6 +27,7 @@ export async function handleSearchEvent(
 
   const inserted = await repository.insertSearchEvent(
     {
+      eventId: resolveEventId(e.eventId, source),
       query: e.query,
       resultCount: e.resultCount,
       occurredAt: e.occurredAt ?? new Date().toISOString(),

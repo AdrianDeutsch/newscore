@@ -40,10 +40,12 @@ class KafkaEventPublisherTest {
     @Test
     @DisplayName("search events are mapped to Avro on the search topic")
     void publishSearchExecuted_sendsAvro() {
-        publisher.publishSearchExecuted(SearchExecutedEvent.of("klima", 3));
+        SearchExecutedEvent event = SearchExecutedEvent.of("klima", 3);
+        publisher.publishSearchExecuted(event);
 
         verify(kafkaTemplate).send(eq(KafkaTopics.SEARCH_EVENTS),
                 argThat(value -> value instanceof de.newscore.kafka.avro.SearchExecutedEvent avro
+                        && avro.getEventId().equals(event.eventId())
                         && avro.getQuery().equals("klima")
                         && avro.getResultCount() == 3));
     }
@@ -51,10 +53,12 @@ class KafkaEventPublisherTest {
     @Test
     @DisplayName("page-view events are mapped to Avro on the user topic")
     void publishPageView_sendsAvro() {
-        publisher.publishPageView(PageViewEvent.of("/article/1"));
+        PageViewEvent event = PageViewEvent.of("/article/1");
+        publisher.publishPageView(event);
 
         verify(kafkaTemplate).send(eq(KafkaTopics.USER_EVENTS),
                 argThat(value -> value instanceof de.newscore.kafka.avro.PageViewEvent avro
+                        && avro.getEventId().equals(event.eventId())
                         && avro.getPath().equals("/article/1")));
     }
 }
