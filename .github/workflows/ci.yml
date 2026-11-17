@@ -112,6 +112,17 @@ jobs:
           docker run --rm -v "$PWD/infrastructure/varnish:/etc/varnish:ro" --entrypoint varnishtest \
             varnish:7.7 /etc/varnish/tests/caching.vtc /etc/varnish/tests/invalidation.vtc
 
+  prometheus:
+    name: prometheus · alert rule tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: promtool check + test
+        run: |
+          docker run --rm -v "$PWD/infrastructure:/infra:ro" -w /infra/prometheus --entrypoint sh \
+            prom/prometheus:v2.54.1 -c \
+            'promtool check rules ../helm/newscore/files/prometheus-rules.yml && promtool test rules rules.test.yml'
+
   helm:
     name: helm · lint & template
     runs-on: ubuntu-latest
@@ -122,13 +133,14 @@ jobs:
           version: v3.16.2
       - name: Helm lint
         run: helm lint infrastructure/helm/newscore
-      - name: Helm template (staging & prod)
+      - name: Helm template (staging & prod, with monitoring resources)
         run: |
           helm template newscore infrastructure/helm/newscore -f infrastructure/helm/newscore/values-staging.yaml > /dev/null
           helm template newscore infrastructure/helm/newscore -f infrastructure/helm/newscore/values-prod.yaml > /dev/null
+          helm template newscore infrastructure/helm/newscore --set monitoring.enabled=true > /dev/null
 
   e2e:
-    name: e2e · compose stack + Playwright
+    name: e2e · full compose stack + Playwright
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -141,10 +153,8 @@ jobs:
       - name: Tune vm.max_map_count for ElasticSearch
         run: sudo sysctl -w vm.max_map_count=262144
       # The same command the README gives: builds all images and waits until every service is healthy.
-      - name: Build and start the stack (with edge cache)
-        run: docker compose --profile edge up --build --wait --wait-timeout 600
-        env:
-          NEWSCORE_VARNISH_PURGE_ENABLED: "true"
+      - name: Build and start the stack (edge cache + observability)
+        run: docker compose --env-file stack-full.env --profile edge --profile observability up --build --wait --wait-timeout 600
       - name: Install test dependencies
         working-directory: e2e
         run: |
@@ -158,7 +168,7 @@ jobs:
         run: npm test
       - name: Container logs
         if: failure()
-        run: docker compose --profile edge logs --no-color --tail 300
+        run: docker compose --profile edge --profile observability logs --no-color --tail 300
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v7

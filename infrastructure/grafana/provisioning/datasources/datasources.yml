@@ -20,7 +20,9 @@ datasources:
     url: http://tempo:3200
     editable: false
     jsonData:
-      # Correlate a trace to its logs in Loki via the traceId label.
+      # "Logs for this trace": the gateway's JSON log lines contain the traceId (json profile).
+      # $$ is a literal $ in Grafana provisioning files.
       tracesToLogsV2:
         datasourceUid: loki
-        filterByTraceID: true
+        customQuery: true
+        query: '{service="api-gateway"} |= "$${__trace.traceId}"'

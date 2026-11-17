@@ -1,3 +1,9 @@
+# Alert rules for the api-gateway — the one copy used everywhere:
+#   - docker compose mounts this file into Prometheus (/etc/prometheus/rules.yml),
+#   - the Helm chart embeds it in its PrometheusRule (templates/prometheusrule.yaml),
+#   - infrastructure/prometheus/rules.test.yml tests it with `promtool test rules`.
+# Every metric used here must be exported by the gateway; e2e/tests/observability.spec.ts checks
+# that against the running service.
 groups:
   - name: newscore-api-gateway
     rules:
@@ -27,13 +33,13 @@ groups:
           description: "More than 1% of requests are returning 5xx for 2 minutes."
 
       - alert: KafkaConsumerLagHigh
-        expr: max(kafka_consumer_fetch_manager_records_lag) > 1000
+        expr: max(kafka_consumer_fetch_manager_records_lag_max{application="newscore-api-gateway"}) > 1000
         for: 3m
         labels:
           severity: critical
         annotations:
           summary: "Kafka consumer lag above 1000"
-          description: "A consumer is lagging by more than 1000 records for 3 minutes."
+          description: "The gateway's article-event consumer is more than 1000 records behind for 3 minutes. (The analytics-service exports no metrics and is not covered.)"
 
       - alert: JvmHeapPressure
         expr: >-

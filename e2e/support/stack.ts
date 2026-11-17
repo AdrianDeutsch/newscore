@@ -2,8 +2,8 @@ import { Client } from 'pg'
 
 /**
  * Addresses of the compose stack as published to the host (docker-compose.yml). The suite never
- * starts or stops containers; it expects
- * `NEWSCORE_VARNISH_PURGE_ENABLED=true docker compose --profile edge up --build --wait` to have run.
+ * starts or stops containers; it expects, from the repository root,
+ * `docker compose --env-file stack-full.env --profile edge --profile observability up --build --wait`.
  */
 export const stack = {
   /** Nuxt SSR frontend, reached directly. */
@@ -14,6 +14,10 @@ export const stack = {
   gateway: process.env.E2E_GATEWAY_URL ?? 'http://localhost:8080',
   elasticsearch: process.env.E2E_ELASTICSEARCH_URL ?? 'http://localhost:9200',
   postgres: process.env.E2E_POSTGRES_URL ?? 'postgres://newscore:newscore@localhost:5432/newscore',
+  prometheus: process.env.E2E_PROMETHEUS_URL ?? 'http://localhost:9090',
+  grafana: process.env.E2E_GRAFANA_URL ?? 'http://localhost:3001',
+  loki: process.env.E2E_LOKI_URL ?? 'http://localhost:3100',
+  tempo: process.env.E2E_TEMPO_URL ?? 'http://localhost:3200',
 }
 
 /** Runs one query against the analytics database and returns the rows. */
