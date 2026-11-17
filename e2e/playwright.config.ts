@@ -4,7 +4,7 @@ import { stack } from './support/stack'
 /**
  * Two browser projects run the same UI flows: once against the frontend directly and once through
  * the edge (Apache -> Varnish), where the security headers and the cache sit in between. The
- * non-browser specs (events, search index, edge cache) run once.
+ * non-browser specs (events, search index, edge cache, observability) run once.
  *
  * Tests run serially: several of them change shared state on purpose (cache contents, the search
  * index) and assert on it.

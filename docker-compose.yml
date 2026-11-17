@@ -15,9 +15,9 @@ name: newscore
 #
 # Simulate a CMS publish:  curl -XPOST http://localhost:8080/internal/cms/articles/1/publish
 #
-# With the edge cache in front (Apache -> Varnish -> frontend on http://localhost:8088), including
-# cache invalidation on article events:
-#   NEWSCORE_VARNISH_PURGE_ENABLED=true docker compose --profile edge up --build
+# Everything, as the CI runs it — edge cache (Apache -> Varnish -> frontend on :8088) with cache
+# invalidation, plus Prometheus, Grafana, Loki and Tempo with JSON logs and tracing switched on:
+#   docker compose --env-file stack-full.env --profile edge --profile observability up --build --wait
 
 services:
   elasticsearch:
@@ -109,7 +109,10 @@ services:
     ports:
       - "8080:8080"
     environment:
-      SPRING_PROFILES_ACTIVE: elasticsearch,kafka
+      # stack-full.env switches on JSON logs (for Loki) and tracing (for Tempo); without the
+      # observability profile both would only produce output nobody collects.
+      SPRING_PROFILES_ACTIVE: ${NEWSCORE_GATEWAY_PROFILES:-elasticsearch,kafka}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${NEWSCORE_TRACING_SAMPLING:-0.0}
       SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       SCHEMA_REGISTRY_URL: http://schema-registry:8081
@@ -204,7 +207,7 @@ services:
       - varnish
     networks: [newscore]
 
-  # ---- Observability stack (Epic 6) — start with: docker compose --profile observability up ----
+  # ---- Observability — start with stack-full.env (see the top of this file) ----
   prometheus:
     image: prom/prometheus:v2.54.1
     profiles: [observability]
@@ -212,7 +215,8 @@ services:
       - --config.file=/etc/prometheus/prometheus.yml
     volumes:
       - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./infrastructure/prometheus/rules.yml:/etc/prometheus/rules.yml:ro
+      # One rules file for compose and Helm (see the header of that file).
+      - ./infrastructure/helm/newscore/files/prometheus-rules.yml:/etc/prometheus/rules.yml:ro
     ports:
       - "9090:9090"
     networks: [newscore]
