@@ -14,7 +14,7 @@ Same-Origin und CSP: [ADR-012](../../docs/adr/ADR-012-same-origin-und-csp.md)
 | Seiten | Startseite mit Ressort-Filter, Artikel, Suche, Fehlerseite (`error.vue`) |
 | Zugriff auf das Gateway | Beim SSR direkt. Im Browser über die eigene Origin: `server/routes/graphql.post.ts` und `server/routes/events/pageview.post.ts` reichen an das Gateway weiter |
 | Content-Security-Policy | `server/plugins/csp.ts`: `script-src 'self'` plus SHA-256-Hashes der Inline-Skripte der jeweiligen Seite, kein `'unsafe-inline'` |
-| HTTP-Status | Artikel nicht gefunden → 404, Gateway nicht erreichbar → 502 (`createError`) |
+| HTTP-Status | Artikel nicht gefunden → 404; Gateway beim Server-Rendering nicht erreichbar → 502 auf Start-, Such- und Artikelseite (`createError`). Schlägt nur das Nachladen im Browser fehl, zeigt die Seite einen Hinweis |
 | Datum und Uhrzeit | Immer in `Europe/Berlin` (`utils/formatDate.ts`), damit Server und Browser denselben Text erzeugen |
 | Pageviews | `plugins/pageview.client.ts` meldet jede Navigation an `/events/pageview` |
 
@@ -46,7 +46,8 @@ Unit-getestet und in der Abdeckung gemessen sind `components/`, `services/`, `ut
 `server/utils/`. Seiten, Plugins, Composables und die Server-Routen haben keine Unit-Tests; sie laufen
 in der Browser-Suite unter [`e2e/`](../../e2e/) gegen den gestarteten Stack, einmal direkt und einmal
 hinter Apache/Varnish. Dort lässt jeder Fehler in der Browser-Konsole einen Test scheitern, also auch
-eine CSP-Verletzung oder ein Hydration-Mismatch.
+eine CSP-Verletzung oder ein Hydration-Mismatch. Das Verhalten ohne erreichbares Gateway prüft
+`e2e/tests/gateway-down.spec.ts`.
 
 Die Unit-Tests laufen mit `TZ=America/New_York` (`vitest.config.ts`), damit ein Datum, das ohne feste
 Zeitzone formatiert wird, sofort auffällt.

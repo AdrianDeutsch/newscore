@@ -15,6 +15,13 @@ const { data, status, error } = await useAsyncData(
   { watch: [category] },
 )
 
+// A failed request on the server becomes a 502 page, not a 200 page with an error text: the edge
+// cache would store that and serve it in place of the last good copy (DEFECT-011). A failed
+// re-fetch in the browser (filter change) shows the error text below instead.
+if (import.meta.server && error.value) {
+  throw createError({ statusCode: 502, statusMessage: 'Inhalte konnten nicht geladen werden', fatal: true })
+}
+
 const heading = computed(() =>
   category.value ? `Ressort: ${category.value}` : 'Aktuelle Meldungen',
 )
