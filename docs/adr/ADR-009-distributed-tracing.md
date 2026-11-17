@@ -50,3 +50,18 @@ Grafana/Loki-Stack passt und kostengünstig (Objektstorage) skaliert.
 - `apps/api-gateway/src/main/resources/application.yml` (`management.tracing` / `management.otlp`)
 - `infrastructure/tempo/tempo.yaml`, Grafana-Tempo-Datasource
 - Verwandt: [ADR-007](ADR-007-observability.md)
+
+## Nachtrag 2026-11-17
+
+- Der Compose-Stack setzte die Sampling-Rate nie auf 1.0 (anders als oben beschrieben); Tempo bekam
+  keinen Trace. `stack-full.env` setzt sie jetzt zusammen mit dem Profil `json`.
+- Producer und Listener von Spring Kafka erzeugen jetzt Observations
+  (`spring.kafka.template/listener.observation-enabled`). Eine HTTP-Anfrage und das Ereignis, das sie
+  auslöst, sind damit ein Trace: Server-Span, Kafka-Send, Kafka-Receive und die PURGE-Aufrufe an
+  Varnish. Die Logzeilen des Consumers tragen dieselbe `traceId`.
+- Spans für ElasticSearch-Aufrufe gibt es nicht. Das Frontend sendet keinen `traceparent`; ein Trace
+  beginnt im Gateway.
+- Grafanas Sprung „Logs zu diesem Trace“ nutzt eine ausdrückliche LogQL-Abfrage auf die `traceId`.
+
+Verifikation jetzt: `e2e/tests/observability.spec.ts` setzt einen eigenen `traceparent`, holt den
+Trace aus Tempo (Span-Arten Server, Producer, Consumer) und findet die Logzeile des Consumers in Loki.

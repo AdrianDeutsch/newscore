@@ -32,14 +32,14 @@
     News<tspan fill="#00DC82">Core</tspan>
   </text>
   <text x="94" y="200" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="22" font-weight="400" fill="#9fb3c8">
-    Cloud-natives, hochverfügbares Nachrichtenportal
+    Nachrichtenportal · GraphQL-Gateway · Events über Kafka
   </text>
 
   <!-- Tech chips -->
   <g font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="600">
     <g transform="translate(94,236)">
       <rect width="92" height="30" rx="15" fill="#00DC82" opacity="0.14"/>
-      <text x="46" y="20" text-anchor="middle" fill="#00DC82">Nuxt 3</text>
+      <text x="46" y="20" text-anchor="middle" fill="#00DC82">Nuxt 4</text>
     </g>
     <g transform="translate(196,236)">
       <rect width="92" height="30" rx="15" fill="#ED8B00" opacity="0.16"/>
@@ -51,7 +51,7 @@
     </g>
     <g transform="translate(426,236)">
       <rect width="104" height="30" rx="15" fill="#36e4da" opacity="0.16"/>
-      <text x="52" y="20" text-anchor="middle" fill="#5ef0e8">OpenShift</text>
+      <text x="52" y="20" text-anchor="middle" fill="#5ef0e8">Kafka</text>
     </g>
   </g>
 
