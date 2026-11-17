@@ -67,3 +67,26 @@ Purge-Fehler werden geschluckt (Fallback = TTL) und dürfen die Event-Verarbeitu
 - `infrastructure/varnish/default.vcl`, `infrastructure/apache/`
 - `apps/api-gateway/src/main/java/de/newscore/cache/`
 - Verwandt: [ADR-003](ADR-003-caffeine-caching.md) (App-Cache), [ADR-005](ADR-005-kafka-eventing.md) (Events)
+
+## Nachtrag 2026-11-17
+
+Die Verifikation oben prüfte, dass das Gateway ein `PURGE` absendet, nicht, dass Varnish danach neu
+lädt. Am laufenden Stack gemessen, tat es das nicht; zugleich konnte jeder Client von außen purgen
+([DEFECT-002](../defects/DEFECT-002-cache-invalidierung.md)). Geändert:
+
+- **`ban` statt `return (purge)`.** `purge` trifft nur das Objekt unter dem Host-Header der Anfrage;
+  Seiten liegen unter dem öffentlichen Hostnamen, das Gateway ruft Varnish als `varnish` auf. Der Ban
+  gilt für den gespeicherten Pfad (`obj.http.x-url`), unabhängig vom Host und einschließlich der
+  Query-Varianten (`/?category=…`).
+- **Apache leitet nur `GET`, `HEAD`, `POST` weiter.** Die ACL in Varnish reicht hinter einem Proxy
+  nicht, weil jede Anfrage dessen Adresse trägt.
+- **Fehlerantworten:** 5xx wird nicht gespeichert, 404 nur 30 s
+  ([DEFECT-007](../defects/DEFECT-007-artikel-404.md)).
+- **CSP** setzt nicht mehr Apache, sondern das Frontend ([ADR-012](ADR-012-same-origin-und-csp.md)).
+- Die Regeln liegen in `infrastructure/varnish/newscore.vcl`, `default.vcl` benennt nur das Backend.
+
+Nicht gemessen sind die im Kontext genannten Zielwerte (TTFB < 200 ms, Hit-Rate > 85 % unter Last);
+einen Lasttest gibt es nicht. Suchseiten werden nicht aktiv invalidiert (TTL 30 s).
+
+Verifikation jetzt: `infrastructure/varnish/tests/*.vtc` (varnishtest) und `e2e/tests/edge.spec.ts`
+gegen den laufenden Stack.

@@ -54,3 +54,12 @@ Kompatibilitätsprüfung bei Schema-Änderungen. Diese Härtung wird hier umgese
 - `apps/api-gateway/src/main/avro/`, `de.newscore.kafka.AvroEventMapper`, `application-kafka.yml`
 - `services/analytics-service/src/eventConsumer.ts`
 - Ersetzt §2 von [ADR-005](ADR-005-kafka-eventing.md); verwandt: [ADR-002](ADR-002-graphql-bff-pattern.md)
+
+## Nachtrag 2026-11-17
+
+- **Avro 1.12 lädt nur freigegebene Klassen.** Ohne Freigabe scheitert jede (De-)Serialisierung mit
+  `SecurityException: Forbidden …`. `AvroTrustConfig` gibt genau die aus `src/main/avro` erzeugten
+  Klassen frei, nicht das ganze Paket und nicht per System-Property.
+- **Der Name des Dead-Letter-Topics ist ausgeschrieben** (`<topic>.DLT`), weil sich der Default von
+  Spring Kafka geändert hat ([DEFECT-004](../defects/DEFECT-004-dead-letter-topic.md)).
+- Auf der Consumer-Seite in Node gilt [ADR-013](ADR-013-analytics-zustellung.md).
