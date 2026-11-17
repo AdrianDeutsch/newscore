@@ -8,9 +8,8 @@
 | **Priorität**   | P0 / P1 / P2 / P3                                |
 | **Komponente**  | frontend / api-gateway / infra / ci             |
 | **Gefunden in** | Version / Commit-SHA                             |
-| **Gemeldet von**| Name                                             |
+| **Gefunden bei**| Anlass / Name                                    |
 | **Datum**       | YYYY-MM-DD                                        |
-| **Ticket**      | NC-XX                                            |
 
 ## Beschreibung
 

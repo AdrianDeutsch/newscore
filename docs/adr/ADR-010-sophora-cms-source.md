@@ -51,3 +51,15 @@ DataSource-Autokonfiguration, die den lauffähigen Zero-Dependency-Stand gefähr
 
 - `apps/api-gateway/src/main/java/de/newscore/cms/`, `application-sophora.yml`
 - Verwandt: [ADR-002](ADR-002-graphql-bff-pattern.md), [ADR-004](ADR-004-elasticsearch-search.md)
+
+## Nachtrag 2026-11-17
+
+- **Der HTTP-Vertrag ist ein eigener.** `/articles` und `/articles/{id}` mit `nodes`, `totalCount`,
+  `hasNextPage` sind für dieses Projekt festgelegt und nur an eine CMS-Auslieferungs-API angelehnt.
+  Der Adapter ist gegen `MockRestServiceServer` getestet, nie gegen eine Sophora-Installation. Im
+  Compose-Stack läuft das Profil `sophora` nicht.
+- **Der Cache saß an der falschen Stelle.** `@Cacheable` stand nur am In-Memory-Mock; unter dem Profil
+  `sophora` wurde nichts gecacht, obwohl oben mit Caffeine argumentiert wird. Der Adapter cacht jetzt
+  selbst (`SophoraCachingIntegrationTest`).
+- Offen: keine eigenen Timeouts am `RestClient`, kein Verhalten für 5xx des CMS festgelegt, `findAll`
+  lädt höchstens 1000 Artikel.
