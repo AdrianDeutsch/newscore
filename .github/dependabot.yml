@@ -53,6 +53,8 @@ updates:
       - dependency-name: "*"
         update-types: [version-update:semver-major]
 
+  # Majors are allowed here: for actions they are mostly runtime changes (Node 20 -> 24), and
+  # ignoring them left the workflow on deprecated versions with a warning in every run.
   - package-ecosystem: github-actions
     directory: /
     schedule:
@@ -60,9 +62,6 @@ updates:
     groups:
       actions:
         patterns: ["*"]
-    ignore:
-      - dependency-name: "*"
-        update-types: [version-update:semver-major]
 
   - package-ecosystem: docker
     directories:
