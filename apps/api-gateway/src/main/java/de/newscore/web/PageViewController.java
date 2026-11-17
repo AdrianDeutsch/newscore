@@ -23,10 +23,12 @@ public class PageViewController {
     static final int MAX_PATH_LENGTH = 2048;
 
     /**
-     * A leading slash, then unreserved, sub-delimiter, ":", "@", "/", "?", "#" and percent-encoded
-     * characters — what the router's {@code fullPath} contains (query spaces as "+", fragment included).
+     * A leading slash, then the characters the router's {@code fullPath} can contain: unreserved,
+     * sub-delimiters, ":", "@", "/", "?", "#", percent-encoding, and the characters vue-router leaves
+     * readable in query values ({@code [ ] | { } ^ `}). Spaces, quotes, angle brackets, backslashes
+     * and control characters are not among them; the router percent-encodes those.
      */
-    private static final Pattern SITE_PATH = Pattern.compile("/[A-Za-z0-9\\-._~!$&'()*+,;=:@/?#%]*");
+    private static final Pattern SITE_PATH = Pattern.compile("/[A-Za-z0-9\\-._~!$&'()*+,;=:@/?#%\\[\\]|{}^`]*");
 
     private final EventPublisher eventPublisher;
 

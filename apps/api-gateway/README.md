@@ -63,7 +63,7 @@ query {
 
 | Ebene | Anzahl | Werkzeuge | Ort |
 |---|---|---|---|
-| Unit | 73 | JUnit 5, Mockito, AssertJ | `src/test/java/de/newscore/unit/` |
+| Unit | 76 | JUnit 5, Mockito, AssertJ | `src/test/java/de/newscore/unit/` |
 | Integration | 16 | `GraphQlTester`, Testcontainers (ElasticSearch 8.18), EmbeddedKafka mit Mock-Schema-Registry, `MockRestServiceServer` | `src/test/java/de/newscore/integration/` |
 
 ```bash
