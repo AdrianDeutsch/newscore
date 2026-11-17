@@ -27,6 +27,8 @@ networkPolicies:
 # Disabled by default because it requires the operator's CRDs to be installed.
 monitoring:
   enabled: false
+  # Namespace Prometheus runs in; the NetworkPolicy lets it scrape the api-gateway.
+  prometheusNamespace: monitoring
   serviceMonitor:
     path: /actuator/prometheus
     interval: 15s

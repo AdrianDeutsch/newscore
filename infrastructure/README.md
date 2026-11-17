@@ -60,7 +60,10 @@ infrastructure/
 ```
 
 Die Alarmregeln liegen in `helm/newscore/files/prometheus-rules.yml`. Der lokale Prometheus bindet
-dieselbe Datei ein wie die `PrometheusRule` des Charts.
+dieselbe Datei ein wie die `PrometheusRule` des Charts. Der Lag-Alarm nutzt den Lag pro Partition,
+den der Consumer des Gateways meldet. Micrometer registriert diese Metrik erst bei seinem Abgleich
+alle 60 s, nach einem Start fehlt sie also bis zu einer Minute. Einen Consumer, der gar nicht mehr
+fetcht, sieht dieser Alarm nicht.
 
 Mit `stack-full.env` schreibt das Gateway JSON-Logs und exportiert jeden Trace. Ein Artikel-Ereignis
 ergibt dann einen Trace aus HTTP-Anfrage, Kafka-Send, Kafka-Receive und den PURGE-Aufrufen; die
@@ -94,8 +97,11 @@ infrastructure/
 
 Pro Komponente (`api-gateway`, `frontend`) erzeugt das Chart Deployment, Service, ConfigMap, HPA und
 PDB. Dazu Ingress (nur Frontend), Secret, ServiceAccount, drei NetworkPolicies (Default-Deny,
-Ingress → Frontend, Frontend → Gateway) und, mit `monitoring.enabled=true`, ServiceMonitor und
-PrometheusRule. Die Pods laufen ohne Root, ohne Capabilities und mit Seccomp `RuntimeDefault`.
+Ingress → Frontend, Frontend → Gateway) und, mit `monitoring.enabled=true`, ServiceMonitor,
+PrometheusRule und eine NetworkPolicy, die Prometheus aus dem Namespace
+`monitoring.prometheusNamespace` (Standard `monitoring`) den Scrape erlaubt. Die Pods laufen ohne
+Root, ohne Capabilities und mit Seccomp `RuntimeDefault`; die Images setzen dafür numerische UIDs
+(Gateway 10001, Node-Images 1000).
 
 ```bash
 helm lint infrastructure/helm/newscore

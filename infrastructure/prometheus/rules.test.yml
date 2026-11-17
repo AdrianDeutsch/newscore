@@ -68,10 +68,13 @@ tests:
         alertname: ApiHighErrorRate
         exp_alerts: []
 
-  - name: Consumer lag above 1000 (the metric the gateway actually exports)
+  # Series with the labels the gateway really exports (one per partition of the article topic).
+  - name: Consumer lag above 1000 on one partition
     interval: 1m
     input_series:
-      - series: 'kafka_consumer_fetch_manager_records_lag_max{application="newscore-api-gateway",client_id="consumer-newscore-api-gateway-article-indexer-1"}'
+      - series: 'kafka_consumer_fetch_manager_records_lag{application="newscore-api-gateway",client_id="consumer-newscore-api-gateway-article-indexer-1",partition="0",topic="newscore_article_events"}'
+        values: '0x10'
+      - series: 'kafka_consumer_fetch_manager_records_lag{application="newscore-api-gateway",client_id="consumer-newscore-api-gateway-article-indexer-1",partition="1",topic="newscore_article_events"}'
         values: '1500x10'
     alert_rule_test:
       - eval_time: 5m
@@ -81,7 +84,17 @@ tests:
               severity: critical
             exp_annotations:
               summary: "Kafka consumer lag above 1000"
-              description: "The gateway's article-event consumer is more than 1000 records behind for 3 minutes. (The analytics-service exports no metrics and is not covered.)"
+              description: "The gateway's article-event consumer is more than 1000 records behind for 3 minutes."
+
+  - name: A consumer that keeps up stays quiet
+    interval: 1m
+    input_series:
+      - series: 'kafka_consumer_fetch_manager_records_lag{application="newscore-api-gateway",client_id="consumer-newscore-api-gateway-article-indexer-1",partition="0",topic="newscore_article_events"}'
+        values: '0 3 1 0 0 2 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 9m
+        alertname: KafkaConsumerLagHigh
+        exp_alerts: []
 
   - name: Heap above 90 % for 5 minutes
     interval: 1m

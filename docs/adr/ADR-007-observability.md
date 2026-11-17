@@ -74,14 +74,21 @@ sind in den Logs bereits vorgesehen. Bewusst noch nicht umgesetzt, um den Scope 
 
 Am laufenden Stack gemessen:
 
-- `KafkaConsumerLagHigh` fragte `kafka_consumer_fetch_manager_records_lag` ab. Das Gateway exportiert
-  diese Metrik nicht (0 Serien in Prometheus), der Alarm konnte nie auslösen. Er nutzt jetzt
-  `…_records_lag_max`. Er deckt nur den Consumer des Gateways ab; der analytics-service exportiert keine
+- `KafkaConsumerLagHigh` fragt `kafka_consumer_fetch_manager_records_lag` ab, den Lag pro Partition.
+  Eine erste Messung auf einem gerade gestarteten Stack fand 0 Serien und führte zu einem Wechsel auf
+  `…_records_lag_max`. Das war falsch: Micrometer registriert die Metriken pro Partition erst bei
+  seinem Abgleich alle 60 s, danach sind sie da. `…_lag_max` ist dagegen ein Maximum über ein
+  Zeitfenster und im Ruhezustand NaN; ein Alarm darauf löst nie aus. Die unabhängige Prüfung des PR
+  hat das gefunden; die Regel nutzt wieder `…_records_lag`. Sie deckt nur den Consumer des Gateways ab
+  und sieht keinen Consumer, der gar nicht mehr fetcht; der analytics-service exportiert keine
   Metriken.
 - Die `PrometheusRule` im Helm-Chart hatte eine eigene, kürzere Kopie der Regeln (4 statt 5). Beide
   nutzen jetzt `infrastructure/helm/newscore/files/prometheus-rules.yml`.
 - Im Compose-Stack lief das Gateway nie mit dem Profil `json`. `stack-full.env` schaltet es ein.
 
-Verifikation jetzt: `infrastructure/prometheus/rules.test.yml` (`promtool test rules`, CI) und
-`e2e/tests/observability.spec.ts`. Dort wird unter anderem jede Metrik, die eine Regel oder das
-Dashboard abfragt, gegen `/actuator/prometheus` geprüft.
+Verifikation jetzt: `infrastructure/prometheus/rules.test.yml` (`promtool test rules`, CI, mit den
+Labels, die das Gateway wirklich exportiert) und `e2e/tests/observability.spec.ts`: Jede Metrik, die
+eine Regel oder das Dashboard abfragt, muss exportiert werden, und jede Serie einer Alarm-Metrik muss
+einen Zahlenwert haben (kein NaN).
+- Mit `monitoring.enabled=true` rendert das Chart eine NetworkPolicy, die Prometheus aus dem Namespace
+  `monitoring.prometheusNamespace` den Scrape erlaubt; ohne sie blockierte die Default-Deny-Policy ihn.
