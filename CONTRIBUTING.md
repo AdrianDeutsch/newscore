@@ -1,70 +1,66 @@
 # Contributing to NewsCore
 
-Danke für deinen Beitrag! Dieses Dokument fasst die wichtigsten Konventionen zusammen.
+Die wichtigsten Konventionen in Kürze.
 
 ## Voraussetzungen
 
-- **Java 21** (für `apps/api-gateway`)
-- **Node.js 22+** (für `apps/frontend`)
-- **Docker** (für das lokale Stack-Setup via `docker compose`)
+- **Java 21** für `apps/api-gateway`
+- **Node.js 24** für `apps/frontend`, `services/analytics-service` und `e2e`
+- **Docker** mit Compose für den Stack, die Testcontainers-Tests und die End-to-End-Suite
 
-## Einmaliges Setup nach dem Clone
+## Nach dem Clone
 
 ```bash
 git config core.hooksPath .githooks
-chmod +x .githooks/*
 ```
 
-Damit sind die lokalen Quality Gates aktiv:
+Damit laufen lokal:
 
-- `pre-commit` — Lint + Format-Check (nur für geänderte Apps)
-- `commit-msg` — Conventional-Commit-Validierung
-- `pre-push` — Unit-Tests (Bypass mit `SKIP_TESTS=1 git push`)
+- `pre-commit`: ESLint bzw. Checkstyle für die Apps, deren Dateien im Commit sind
+- `commit-msg`: Prüfung auf Conventional Commits
+- `pre-push`: Unit-Tests von Gateway, Frontend und Analytics-Service (überspringen mit
+  `SKIP_TESTS=1 git push`)
 
-## Branch-Strategie (GitFlow light)
+## Branches
 
-| Branch       | Zweck                                            |
-|--------------|--------------------------------------------------|
-| `main`       | Production-ready, protected, nur via MR          |
-| `develop`    | Integrationsbranch                               |
-| `feature/*`  | Neue Features (`feature/NC-42-article-search`)   |
-| `fix/*`      | Bugfixes (`fix/NC-99-varnish-ttl`)               |
-| `hotfix/*`   | Kritische Prod-Fixes                             |
-| `release/*`  | Release-Vorbereitung                             |
+| Branch | Zweck |
+|---|---|
+| `main` | stabiler Stand; Änderungen über Pull Requests |
+| `develop` | Integrationsbranch |
+| `feature/*`, `feat/*` | neue Funktionen |
+| `fix/*` | Fehlerbehebungen |
 
-## Commit-Konventionen (Conventional Commits)
+## Commit-Format (Conventional Commits)
 
-Format: `type(scope): beschreibung (TICKET-NR)`
+Format: `type(scope): beschreibung`
 
 ```text
-feat(frontend): add article search with debounce (NC-42)
-fix(api): resolve N+1 query in author resolver (NC-55)
-test(api): add integration tests for search endpoint
-docs(adr): add ADR-001 GraphQL client decision
+feat(frontend): add article search with debounce
+fix(edge): make cache invalidation work and keep outsiders from purging
+test(e2e): end-to-end suite against the compose stack
+docs(adr): add ADR-012
 ```
 
 Erlaubte Typen: `feat | fix | perf | test | ci | docs | refactor | chore | style | build | revert`
 
 ## Tests
 
-Vor jedem Push laufen Unit-Tests automatisch. Manuell:
-
 ```bash
-# Backend
-cd apps/api-gateway && ./mvnw verify          # Unit + Integration + Coverage
-
-# Frontend
+cd apps/api-gateway && ./mvnw verify
 cd apps/frontend && npm run test:unit -- --run
+cd services/analytics-service && npm run test:unit -- --run && npm run test:integration
 ```
 
-Unit-Test-Coverage-Ziel: **≥ 80 %** (in CI erzwungen).
+End-to-End gegen den vollständigen Stack: siehe [README](README.md#tests).
+
+Abdeckungsgrenze in allen drei Diensten: 80 % Zeilen, in der CI erzwungen. Jede fachliche Regel
+bekommt einen Test, der fehlschlagen kann; bei Fehlerbehebungen einen, der vor dem Fix fehlschlägt.
 
 ## Architecture Decision Records
 
-Jede größere Technologie- oder Pattern-Entscheidung bekommt ein ADR in [`docs/adr/`](docs/adr/).
-Schreibe das ADR **bevor** du die Entscheidung umsetzt.
+Größere Technologie- oder Musterentscheidungen bekommen ein ADR in [`docs/adr/`](docs/adr/).
 
-## Defect Management
+## Fehlerberichte
 
-Bugs werden über das [`docs/defects/`](docs/defects/)-Verzeichnis nach dem
-[Defect-Template](docs/defects/DEFECT-TEMPLATE.md) dokumentiert.
+Fehler werden in [`docs/defects/`](docs/defects/) nach dem
+[Template](docs/defects/DEFECT-TEMPLATE.md) dokumentiert, mit Ursache und Regressionstest.

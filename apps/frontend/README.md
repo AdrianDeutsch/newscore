@@ -1,74 +1,79 @@
 # NewsCore Frontend
 
-Server-seitig gerendertes Medienportal — **Nuxt 3**, **Vue 3**, **TypeScript**, GraphQL via **urql**.
-Konsumiert ausschließlich die GraphQL-API des [api-gateway](../api-gateway/README.md).
+Server-seitig gerendertes Nachrichtenportal: Nuxt 4, Vue 3, TypeScript, GraphQL über urql. Die Daten
+kommen ausschließlich vom [api-gateway](../api-gateway/README.md).
 
-> GraphQL-Client-Entscheidung: [ADR-001](../../docs/adr/ADR-001-graphql-client-urql.md)
+GraphQL-Client: [ADR-001](../../docs/adr/ADR-001-graphql-client-urql.md) ·
+Same-Origin und CSP: [ADR-012](../../docs/adr/ADR-012-same-origin-und-csp.md)
 
-## ✨ Was drin ist
+## Was drin ist
 
-| Thema            | Umsetzung                                                                 |
-|------------------|---------------------------------------------------------------------------|
-| Rendering        | SSR via `useAsyncData`; urql `ssrExchange` → Nuxt-Payload-Hydration       |
-| GraphQL-Client   | urql (`@urql/core`), gekapselt in `services/article.service.ts`           |
-| Komponenten      | `ArticleCard`, `CategoryNav`, `SearchBar`, `BreadcrumbNav`                |
-| Composables      | `useArticle`, `useSearch`                                                  |
-| Seiten           | Startseite (Ressort-Filter), Artikeldetail, Suche                         |
-| Bilder           | Lazy Loading (`loading="lazy"`), Placeholder-Fallback                      |
-| Tests            | Vitest + Vue Test Utils (Komponente + Service-Layer)                       |
+| Thema | Umsetzung |
+|---|---|
+| Rendering | SSR mit `useAsyncData`; urql `ssrExchange` überträgt die Daten in den Nuxt-Payload, der Browser lädt beim Hydrieren nicht neu |
+| Seiten | Startseite mit Ressort-Filter, Artikel, Suche, Fehlerseite (`error.vue`) |
+| Zugriff auf das Gateway | Beim SSR direkt. Im Browser über die eigene Origin: `server/routes/graphql.post.ts` und `server/routes/events/pageview.post.ts` reichen an das Gateway weiter |
+| Content-Security-Policy | `server/plugins/csp.ts`: `script-src 'self'` plus SHA-256-Hashes der Inline-Skripte der jeweiligen Seite, kein `'unsafe-inline'` |
+| HTTP-Status | Artikel nicht gefunden → 404, Gateway nicht erreichbar → 502 (`createError`) |
+| Datum und Uhrzeit | Immer in `Europe/Berlin` (`utils/formatDate.ts`), damit Server und Browser denselben Text erzeugen |
+| Pageviews | `plugins/pageview.client.ts` meldet jede Navigation an `/events/pageview` |
 
-## 🚀 Quick Start
+## Starten
 
 ```bash
 npm install
-npm run dev      # http://localhost:3000  (erwartet api-gateway auf :8080)
+npm run dev      # http://localhost:3000, erwartet das Gateway auf http://localhost:8080
 ```
 
-Andere Endpoints konfigurieren:
+Gateway an anderer Adresse:
 
 ```bash
-# Server-seitig (SSR) und Client-seitig getrennt überschreibbar
-NUXT_GRAPHQL_ENDPOINT=http://api-gateway:8080/graphql \
-NUXT_PUBLIC_GRAPHQL_ENDPOINT=http://localhost:8080/graphql \
-npm run dev
+NUXT_GATEWAY_URL=http://localhost:18081 npm run dev
 ```
 
-## 🎯 Tests
+Im Entwicklungsmodus sendet die Anwendung keine CSP (Vite braucht dort Inline-Skripte und `eval`).
+
+## Tests
 
 ```bash
-npm run test:unit -- --run            # einmalig
-npm run test:unit -- --run --coverage # mit Coverage (>=80% auf der Unit-Schicht)
+npm run test:unit -- --run              # 25 Tests
+npm run test:unit -- --run --coverage   # mit Abdeckungsgrenze (80 % Zeilen)
 npm run lint
 npm run type-check
 ```
 
-Der Coverage-Scope umfasst die unit-testbare Schicht (`components/**`, `services/**`).
-Nuxt-Glue (Plugins, Composables, Pages) wird später über E2E-Tests (Playwright) abgedeckt.
+Unit-getestet und in der Abdeckung gemessen sind `components/`, `services/`, `utils/` und
+`server/utils/`. Seiten, Plugins, Composables und die Server-Routen haben keine Unit-Tests; sie laufen
+in der Browser-Suite unter [`e2e/`](../../e2e/) gegen den gestarteten Stack, einmal direkt und einmal
+hinter Apache/Varnish. Dort lässt jeder Fehler in der Browser-Konsole einen Test scheitern, also auch
+eine CSP-Verletzung oder ein Hydration-Mismatch.
 
-## 🗂 Struktur
+Die Unit-Tests laufen mit `TZ=America/New_York` (`vitest.config.ts`), damit ein Datum, das ohne feste
+Zeitzone formatiert wird, sofort auffällt.
+
+## Struktur
 
 ```
-components/   ArticleCard, CategoryNav, SearchBar, BreadcrumbNav
-composables/  useArticle, useSearch        (Nuxt-Glue um den Service)
-services/     article.service.ts           (testbarer urql-Wrapper)
-graphql/      queries.ts                    (Query-Dokumente)
-plugins/      urql.ts                       (Client + ssrExchange)
-pages/        index, article/[id], search
-types/        article.ts                    (Schema-Spiegel)
-tests/unit/   components, services, factories
+pages/          index, article/[id], search
+components/     ArticleCard, CategoryNav, SearchBar, BreadcrumbNav
+composables/    useArticle, useSearch
+services/       article.service.ts       testbarer urql-Wrapper
+graphql/        queries.ts
+plugins/        urql.ts (Client + ssrExchange), pageview.client.ts
+server/routes/  graphql.post.ts, events/pageview.post.ts   Weiterleitung ans Gateway
+server/plugins/ csp.ts
+server/utils/   csp.ts                   Hash-Berechnung
+utils/          formatDate.ts
+error.vue
+tests/unit/     components, services, server, utils
 ```
 
-## 🐳 Docker
+## Docker
 
-```bash
-docker build -t newscore/frontend .
-docker run -p 3000:3000 \
-  -e NUXT_GRAPHQL_ENDPOINT=http://host.docker.internal:8080/graphql \
-  newscore/frontend
-```
+Das Image baut der Compose-Stack. Es braucht zur Laufzeit nur `NUXT_GATEWAY_URL`.
 
-## 🛣 Roadmap
+## Nicht umgesetzt
 
-- `@graphql-codegen` für typsichere Operationen (siehe ADR-001)
-- Playwright-E2E für die wichtigsten User Journeys
-- `@nuxt/image` + CDN, i18n (`@nuxtjs/i18n`), PWA-Support
+- GraphQL-Codegen (die Typen in `types/article.ts` sind von Hand gepflegt)
+- Die Ressort-Navigation ist fest verdrahtet (`components/CategoryNav.vue`), nicht vom Gateway geladen
+- i18n, `@nuxt/image`, PWA

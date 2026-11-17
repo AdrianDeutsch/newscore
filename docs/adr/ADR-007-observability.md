@@ -24,7 +24,7 @@ Scraping:
 - **Cluster:** ein **ServiceMonitor** (Prometheus-Operator) im Helm-Chart (`monitoring.enabled`).
 
 ### 2. Alerting: Prometheus-Rules / PrometheusRule
-Alert-Regeln (`infrastructure/prometheus/rules.yml`, im Cluster als `PrometheusRule`):
+Alert-Regeln (heute `infrastructure/helm/newscore/files/prometheus-rules.yml`, im Cluster als `PrometheusRule`):
 `ApiHighLatencyP95` (>500 ms), `ApiHighErrorRate` (>1 % 5xx), `KafkaConsumerLagHigh` (>1000),
 `JvmHeapPressure` (>90 %), `ApiGatewayDown`. Die Liste ist in beiden Formaten konsistent gehalten.
 
@@ -57,7 +57,7 @@ sind in den Logs bereits vorgesehen. Bewusst noch nicht umgesetzt, um den Scope 
 
 ## Verifikation
 
-- `promtool check rules infrastructure/prometheus/rules.yml`
+- `promtool check rules infrastructure/helm/newscore/files/prometheus-rules.yml`
 - `helm template ... --set monitoring.enabled=true` rendert ServiceMonitor + PrometheusRule.
 - Grafana-Dashboard ist valides JSON.
 - Lokal: Prometheus scrapt das Gateway (Target „up"); das Gateway gibt unter `json`-Profil
@@ -69,3 +69,19 @@ sind in den Logs bereits vorgesehen. Bewusst noch nicht umgesetzt, um den Scope 
 - `infrastructure/{prometheus,grafana,loki}/`
 - `infrastructure/helm/newscore/templates/{servicemonitor,prometheusrule}.yaml`
 - Verwandt: [ADR-005](ADR-005-kafka-eventing.md), [ADR-006](ADR-006-helm-argocd-gitops.md)
+
+## Nachtrag 2026-11-17
+
+Am laufenden Stack gemessen:
+
+- `KafkaConsumerLagHigh` fragte `kafka_consumer_fetch_manager_records_lag` ab. Das Gateway exportiert
+  diese Metrik nicht (0 Serien in Prometheus), der Alarm konnte nie auslösen. Er nutzt jetzt
+  `…_records_lag_max`. Er deckt nur den Consumer des Gateways ab; der analytics-service exportiert keine
+  Metriken.
+- Die `PrometheusRule` im Helm-Chart hatte eine eigene, kürzere Kopie der Regeln (4 statt 5). Beide
+  nutzen jetzt `infrastructure/helm/newscore/files/prometheus-rules.yml`.
+- Im Compose-Stack lief das Gateway nie mit dem Profil `json`. `stack-full.env` schaltet es ein.
+
+Verifikation jetzt: `infrastructure/prometheus/rules.test.yml` (`promtool test rules`, CI) und
+`e2e/tests/observability.spec.ts`. Dort wird unter anderem jede Metrik, die eine Regel oder das
+Dashboard abfragt, gegen `/actuator/prometheus` geprüft.

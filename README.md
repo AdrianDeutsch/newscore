@@ -1,259 +1,266 @@
 <h1 align="center">NewsCore</h1>
 
 <p align="center">
-  <img src="docs/images/banner.svg" alt="NewsCore – cloud-natives Nachrichtenportal" width="760">
+  <img src="docs/images/banner.svg" alt="NewsCore – Nachrichtenportal mit GraphQL-Gateway" width="760">
 </p>
 
 <p align="center">
-  <a href="https://github.com/AdrianDeutsch/newscore/actions/workflows/ci.yml"><img src="https://github.com/AdrianDeutsch/newscore/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="apps/api-gateway"><img src="https://img.shields.io/badge/backend%20coverage-98%25-brightgreen" alt="Backend Coverage"></a>
-  <a href="apps/frontend"><img src="https://img.shields.io/badge/frontend%20coverage-95%25-brightgreen" alt="Frontend Coverage"></a>
-  <img src="https://img.shields.io/badge/Nuxt-3-00DC82?logo=nuxt.js&logoColor=white" alt="Nuxt 3">
+  <a href="https://github.com/AdrianDeutsch/newscore/actions/workflows/ci.yml"><img src="https://github.com/AdrianDeutsch/newscore/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
   <img src="https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white" alt="Java 21">
-  <img src="https://img.shields.io/badge/Spring%20Boot-3-6DB33F?logo=springboot&logoColor=white" alt="Spring Boot 3">
-  <img src="https://img.shields.io/badge/GraphQL-BFF-E10098?logo=graphql&logoColor=white" alt="GraphQL">
+  <img src="https://img.shields.io/badge/Spring%20Boot-3.5-6DB33F?logo=springboot&logoColor=white" alt="Spring Boot 3.5">
+  <img src="https://img.shields.io/badge/Nuxt-4-00DC82?logo=nuxt.js&logoColor=white" alt="Nuxt 4">
+  <img src="https://img.shields.io/badge/Kafka-Avro-231F20?logo=apachekafka&logoColor=white" alt="Kafka mit Avro">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License"></a>
 </p>
 
 <p align="center">
-  <strong>NewsCore</strong> ist ein cloud-natives, hochverfügbares Nachrichtenportal: redaktionelle
-  Inhalte aus einem CMS, ausgeliefert über eine GraphQL-API (Backend-for-Frontend) an ein
-  server-seitig gerendertes Nuxt-3-Frontend — ausgelegt für High-Traffic und GitOps-Betrieb auf
-  OpenShift/Kubernetes.
-</p>
-
-<p align="center">
-  <img src="docs/images/hero-demo.gif" alt="Live-Demo: Startseite → Artikeldetail → Volltextsuche" width="760">
+  <img src="docs/images/hero-demo.gif" alt="Startseite → Ressort-Filter → Artikel → Suche" width="760">
   <br>
-  <em>Ein echter End-to-End-Lauf: Startseite mit Ressort-Filter → Artikeldetail → Volltextsuche —
-  Nuxt 3 SSR über die GraphQL-API (auch als <a href="docs/images/hero-demo.mp4">MP4</a>).</em>
+  <em>Aufgenommen am laufenden Compose-Stack: Startseite → Ressort „Politik“ → Artikel → Suche nach
+  „klima“ (auch als <a href="docs/images/hero-demo.mp4">MP4</a>).</em>
 </p>
 
-## 📑 Inhaltsverzeichnis
+**NewsCore** ist ein Demo-Nachrichtenportal aus mehreren Diensten: ein server-seitig gerendertes
+Nuxt-Frontend, ein GraphQL-Gateway in Spring Boot (Backend-for-Frontend), Volltextsuche in
+ElasticSearch, Ereignisse über Kafka mit Avro und ein Analytics-Dienst in Node.js, der sie in
+PostgreSQL schreibt. Davor sitzen Apache und Varnish, daneben Prometheus, Grafana, Loki und Tempo.
+Die Inhalte sind acht Demo-Artikel; ein CMS-Adapter kann sie per Profil ersetzen.
 
-- [Highlights](#-highlights)
-- [Screenshots](#-screenshots)
-- [Features](#-features)
-- [Architektur](#-architektur)
-- [Quick Start](#-quick-start)
-- [Teststrategie](#-teststrategie)
-- [CI/CD Pipeline](#-cicd-pipeline)
-- [Projektstruktur](#-projektstruktur)
-- [Defect Management](#-defect-management)
-- [Architecture Decision Records](#-architecture-decision-records)
-- [Roadmap](#-roadmap)
+Der ganze Stack startet mit einem Befehl. Die CI baut ihn bei jedem Push, startet ihn und prüft ihn
+im Browser, in der Datenbank, im Cache, in den Metriken und in den Traces.
 
-## ⭐ Highlights
+| Ebene | Tests | Gegen |
+|---|---:|---|
+| Gateway, Unit | 58 | Mocks |
+| Gateway, Integration | 16 | Spring-Kontext, ElasticSearch 8.18 (Testcontainers), EmbeddedKafka mit Mock-Schema-Registry |
+| Frontend, Unit | 25 | Komponenten und Services, gemockter GraphQL-Client |
+| Analytics, Unit | 23 | gemocktes PostgreSQL und Schema Registry |
+| Analytics, Integration | 4 | PostgreSQL 16 (Testcontainers) mit dem Schema des Stacks |
+| Varnish | 2 Dateien | `varnishtest` mit Mock-Backend |
+| Alarmregeln | 7 Fälle | `promtool test rules` |
+| End-to-End | 24 (33 Läufe) | der komplette Compose-Stack, Chromium |
 
-- **Lauffähiger Vertical Slice in einem Befehl** — `docker compose up --build` startet GraphQL-Gateway + SSR-Frontend.
-- **N+1-frei by design** — nested `author`/`category` werden per DataLoader (`@BatchMapping`) gebatcht.
-- **Austauschbare Datenquelle** — Resolver kennen nur Service-Interfaces; In-Memory-Mock, **Sophora-CMS** und ElasticSearch sind reine Profil-Schalter, ohne Resolver-Änderung.
-- **Hohe Testabdeckung, in CI erzwungen** — Backend **98 %**, Frontend **96 %** (Gate ≥ 80 %).
-- **Dokumentierte Entscheidungen** — jede Technologiewahl als [ADR](docs/adr/).
+Alle Ebenen laufen in der CI bei jedem Push auf `main` und `develop`, bei jedem Pull Request und
+einmal pro Woche.
 
-## 📸 Screenshots
+---
 
-<table>
-  <tr>
-    <td width="33%"><img src="docs/images/screenshot-home.png" alt="Startseite"></td>
-    <td width="33%"><img src="docs/images/screenshot-article.png" alt="Artikeldetail"></td>
-    <td width="33%"><img src="docs/images/screenshot-search.png" alt="Suche"></td>
-  </tr>
-  <tr>
-    <td align="center"><em>Startseite — Ressort-Filter + Artikel-Grid</em></td>
-    <td align="center"><em>Artikeldetail — Breadcrumb, Autor, Cover</em></td>
-    <td align="center"><em>Suche — <code>search("klima")</code> → 2 Treffer</em></td>
-  </tr>
-</table>
+## Inhalt
 
-## ✨ Features
+- [Was es zeigt](#was-es-zeigt)
+- [Was das Nachmessen gefunden hat](#was-das-nachmessen-gefunden-hat)
+- [Architektur](#architektur)
+- [Schnellstart](#schnellstart)
+- [Tests](#tests)
+- [CI](#ci)
+- [Projektstruktur](#projektstruktur)
+- [Entscheidungen (ADRs)](#entscheidungen-adrs)
+- [Grenzen](#grenzen)
 
-| Feature                         | Status | Technologie                              | Anmerkung |
-|---------------------------------|:------:|------------------------------------------|-----------|
-| GraphQL-BFF-Gateway             |   ✅   | Spring Boot 3, `spring-graphql`, Java 21 | Schema-first |
-| N+1-Vermeidung                  |   ✅   | DataLoader via `@BatchMapping`           | author + category |
-| Application-Cache               |   ✅   | Caffeine (`@Cacheable`)                  | [ADR-003](docs/adr/ADR-003-caffeine-caching.md) |
-| SSR-Frontend                    |   ✅   | Nuxt 3, Vue 3, TypeScript                | `useAsyncData` |
-| GraphQL-Client                  |   ✅   | urql (`ssrExchange`)                     | [ADR-001](docs/adr/ADR-001-graphql-client-urql.md) |
-| Edge-Caching                    |   ✅   | Varnish (VCL) + Apache (TLS/gzip/Header) | [ADR-008](docs/adr/ADR-008-varnish-caching.md), event-getriebenes PURGE |
-| Volltextsuche                   |   ✅   | ElasticSearch 8 (Profil-gesteuert)       | [ADR-004](docs/adr/ADR-004-elasticsearch-search.md), Testcontainers |
-| CMS-Datenquelle                 |   ✅   | Sophora-HTTP-Adapter (Profil `sophora`)  | [ADR-010](docs/adr/ADR-010-sophora-cms-source.md), Default In-Memory |
-| Event-Streaming                 |   ✅   | Kafka + **Avro/Schema-Registry** + DLQ   | [ADR-011](docs/adr/ADR-011-avro-schema-registry.md), EmbeddedKafka + Mock-Registry |
-| Aktive Cache-Invalidierung      |   ✅   | `article.events` → ES-Reindex + Evict    | schließt den Loop zu ADR-003 |
-| Analytics → PostgreSQL          |   ✅   | analytics-service (Node, kafkajs + pg)   | `search.events` + `user.events` (Pageviews) → Postgres |
-| Observability-Endpoint          |   ✅   | Actuator + `/actuator/prometheus`        | Grafana folgt |
-| Lokales Stack-Setup             |   ✅   | docker-compose (ES + Kafka + Postgres)   | ein Befehl |
-| CI-Pipeline                     |   ✅   | GitLab CI (5 Stages)                     | Coverage-Gate |
-| K8s/OpenShift + GitOps          |   ✅   | Helm-Umbrella-Chart + ArgoCD             | [ADR-006](docs/adr/ADR-006-helm-argocd-gitops.md), HPA/PDB/NetworkPolicy |
-| Observability                   |   ✅   | Prometheus + Grafana + Loki              | [ADR-007](docs/adr/ADR-007-observability.md), Dashboards/Alerts/JSON-Logs |
-| Distributed Tracing             |   ✅   | OpenTelemetry + Tempo (OTLP)             | [ADR-009](docs/adr/ADR-009-distributed-tracing.md), Trace↔Logs-Korrelation |
+## Was es zeigt
 
-## 🏗 Architektur
+- **GraphQL-Gateway ohne N+1.** `author` und `category` werden für eine Artikelliste mit je einem
+  Aufruf geladen (`@BatchMapping`). Ein Integrationstest zählt die Aufrufe.
+- **Austauschbare Quellen per Spring-Profil.** In-Memory oder CMS-Adapter für Artikel, In-Memory oder
+  ElasticSearch für die Suche, ohne Änderung an den Resolvern.
+- **Ein Artikel-Ereignis hält alles aktuell.** Der CMS-Simulator (`POST /internal/cms/articles/{id}/update`)
+  schreibt ein Ereignis nach Kafka. Der Consumer im Gateway leert die Caffeine-Caches, indiziert den
+  Artikel in ElasticSearch neu und invalidiert Artikelseite und Startseite in Varnish. Die
+  End-to-End-Suite prüft jeden dieser Schritte.
+- **Analytics ohne Datenverlust bei Ausfällen.** Vorübergehende Fehler führen zu erneuter Zustellung
+  statt zum Verwerfen. Gespeichert wird idempotent über Topic, Partition und Offset
+  ([ADR-013](docs/adr/ADR-013-analytics-zustellung.md)).
+- **Der Browser kennt nur eine Origin.** GraphQL-Aufrufe aus dem Browser gehen an den Frontend-Server,
+  der sie weiterreicht. Keine CORS-Freigabe, eine CSP mit Hashes statt `'unsafe-inline'`
+  ([ADR-012](docs/adr/ADR-012-same-origin-und-csp.md)).
+- **Ein Trace über Kafka hinweg.** Mit `stack-full.env` ergibt eine HTTP-Anfrage an das Gateway
+  zusammen mit dem Ereignis, das sie auslöst, einen Trace in Tempo. Die Logzeilen des Consumers tragen
+  dieselbe `traceId` und sind in Loki darüber auffindbar.
+- **Alarme, die auslösen können.** Jede Alarmregel hat einen `promtool`-Test; ein End-to-End-Test
+  prüft, dass das Gateway jede Metrik exportiert, die Regeln und Dashboard abfragen.
+
+## Was das Nachmessen gefunden hat
+
+Vor diesen Änderungen war die CI grün, aber `docker compose up --build` aus diesem README schlug fehl,
+und die CI hatte den Stack nie gestartet. Erst das Starten und Messen hat die folgenden Fehler
+gezeigt. Jeder hat einen Bericht mit Ursache und den Test, der ihn jetzt abdeckt.
+
+| | Befund | Bericht |
+|---|---|---|
+| 1 | Images bauen nicht mehr (Basis-Images geändert, Lockfile-Fehler durch `npm ci \|\| npm install` verdeckt) | [DEFECT-001](docs/defects/DEFECT-001-compose-build.md) |
+| 2 | Cache-Invalidierung wirkungslos, dafür kann jeder von außen den Cache leeren | [DEFECT-002](docs/defects/DEFECT-002-cache-invalidierung.md) |
+| 3 | Analytics-Service verwirft bei einem Datenbankausfall alle Ereignisse | [DEFECT-003](docs/defects/DEFECT-003-analytics-eventverlust.md) |
+| 4 | Nach dem Spring-Boot-Update landen fehlerhafte Nachrichten im falschen Dead-Letter-Topic | [DEFECT-004](docs/defects/DEFECT-004-dead-letter-topic.md) |
+| 5 | Ereignisse bleiben nach dem Start minutenlang unverarbeitet (Topic mit falscher Partitionszahl) | [DEFECT-005](docs/defects/DEFECT-005-topic-partitionen.md) |
+| 6 | Hinter dem Proxy blockiert die CSP das Frontend; die Seite ist nicht bedienbar | [DEFECT-006](docs/defects/DEFECT-006-csp-edge.md) |
+| 7 | Nicht vorhandener Artikel antwortet mit 200 und landet so im Cache | [DEFECT-007](docs/defects/DEFECT-007-artikel-404.md) |
+| 8 | Uhrzeit hängt davon ab, ob Server oder Browser rendert | [DEFECT-008](docs/defects/DEFECT-008-zeitzone.md) |
+| 9 | Health-Endpoint meldet DOWN, obwohl das Gateway läuft | [DEFECT-009](docs/defects/DEFECT-009-health-down.md) |
+
+Dazu Funde ohne eigenen Bericht: Die Alarmregel für den Kafka-Lag fragte eine Metrik ab, die es nicht
+gibt; Tempo bekam im Compose-Stack nie einen Trace; der Cache stand nur vor der In-Memory-Quelle, nicht
+vor dem CMS-Adapter; `npm audit` meldete 47 bzw. 18 Schwachstellen (jetzt 0).
+
+## Architektur
 
 ```mermaid
-flowchart TD
-    User([Browser]) -->|HTTPS| Apache[Apache Reverse Proxy<br/>TLS · Rate-Limit]
-    Apache --> Varnish[Varnish Cache]
-    Varnish -->|Cache-Miss| Nuxt[Nuxt 3 SSR<br/>urql]
-    Nuxt -->|GraphQL| GW[GraphQL API Gateway<br/>Spring Boot · BFF<br/>DataLoader · Caffeine]
-    GW --> CMS[(Sophora CMS)]
-    GW --> ES[(ElasticSearch 8)]
-    GW --> PG[(PostgreSQL)]
-    GW --> Kafka{{Apache Kafka}}
-    Kafka --> Analytics[Analytics-Service]
-    GW --> Prom[Prometheus / Grafana / Loki]
-
-    classDef done fill:#ecfdf5,stroke:#00a862,color:#0b1220;
-    classDef soon fill:#f1f5f9,stroke:#94a3b8,color:#475569,stroke-dasharray:4 3;
-    class Nuxt,GW,ES,Kafka,Analytics,PG,Prom,Apache,Varnish done;
-    class CMS soon;
+flowchart LR
+    Browser([Browser]) --> Apache["Apache<br/>gzip · Security-Header"]
+    Apache --> Varnish[Varnish]
+    Varnish --> Nuxt["Nuxt SSR<br/>/graphql · /events/pageview"]
+    Nuxt -->|GraphQL| GW["API-Gateway<br/>Spring Boot · Caffeine"]
+    GW --> ES[(ElasticSearch)]
+    GW -.->|Profil sophora| CMS[(CMS-HTTP-API)]
+    GW -->|Avro| Kafka{{Kafka + Schema Registry}}
+    Kafka -->|Artikel-Ereignisse| GW
+    GW -->|PURGE| Varnish
+    Kafka -->|Suche, Seitenaufrufe| Analytics[Analytics-Service]
+    Analytics --> PG[(PostgreSQL)]
+    GW -.->|Metriken, Logs, Traces| Obs["Prometheus · Loki · Tempo<br/>Grafana"]
 ```
 
-Grün = in dieser Iteration umgesetzt · gestrichelt = vorgesehen (Roadmap).
-Begründung der zentralen Schicht: [ADR-002 — GraphQL BFF](docs/adr/ADR-002-graphql-bff-pattern.md).
+Gestrichelt: optional (Profil bzw. Compose-Profil). Begründung der Gateway-Schicht:
+[ADR-002](docs/adr/ADR-002-graphql-bff-pattern.md).
 
-## 🚀 Quick Start
+## Schnellstart
 
-### Variante A — Komplettes Stack (Docker)
+Voraussetzung: Docker mit Compose.
 
 ```bash
 docker compose up --build
-# Frontend:  http://localhost:3000
-# GraphiQL:  http://localhost:8080/graphiql
 ```
 
-### Variante B — Apps einzeln (lokal)
+- Frontend: <http://localhost:3000>
+- GraphiQL: <http://localhost:8080/graphiql>
+
+Der vollständige Stack, wie ihn die CI startet: Edge-Cache auf <http://localhost:8088>, Grafana auf
+<http://localhost:3001>, JSON-Logs, Tracing und Cache-Invalidierung eingeschaltet:
 
 ```bash
-# Terminal 1 — API-Gateway (Maven Wrapper lädt Maven beim ersten Lauf)
-cd apps/api-gateway && ./mvnw spring-boot:run
-
-# Terminal 2 — Frontend
-cd apps/frontend && npm install && npm run dev
+docker compose --env-file stack-full.env --profile edge --profile observability up --build --wait
 ```
 
-### Hooks aktivieren (nach dem Clone)
+Ein Artikel-Ereignis auslösen, wie es ein CMS-Webhook täte:
+
+```bash
+curl -XPOST http://localhost:8080/internal/cms/articles/1/update
+```
+
+Die Dienste einzeln (Java 21, Node.js 24):
+
+```bash
+cd apps/api-gateway && ./mvnw spring-boot:run     # Standardprofil, ohne Infrastruktur
+cd apps/frontend && npm install && npm run dev    # erwartet das Gateway auf :8080
+```
+
+Git-Hooks (Lint vor dem Commit, Commit-Format, Unit-Tests vor dem Push):
 
 ```bash
 git config core.hooksPath .githooks
-chmod +x .githooks/*
 ```
 
-## 🎯 Teststrategie
-
-Strikte Testpyramide — Bulk an Unit-Tests, gezielte Integrationstests, wenige E2E (Roadmap):
-
-```
-        ┌────────────────────┐
-        │   E2E (Playwright) │   🔜 Roadmap
-        ├────────────────────┤
-        │  Integrationstests │   GraphQlTester · Testcontainers (ES) · EmbeddedKafka
-        ├────────────────────┤
-        │     Unit-Tests     │   JUnit 5 · Vitest  (Bulk)
-        └────────────────────┘
-```
-
-| Schicht           | Tooling                                         | Umfang                       |
-|-------------------|-------------------------------------------------|------------------------------|
-| Backend           | JUnit 5, Mockito, AssertJ                       | 52 Unit-Tests                |
-| Backend           | `GraphQlTester`, Testcontainers (ES), EmbeddedKafka (+ Mock-Schema-Registry) | 11 Integrationstests |
-| Frontend          | Vitest, Vue Test Utils, happy-dom               | 16 Tests                     |
-| analytics-service | Vitest (gemockt: kafkajs + pg)                  | 12 Tests                     |
+## Tests
 
 ```bash
-cd apps/api-gateway          && ./mvnw verify                        # Backend: Tests + JaCoCo-Gate
-cd apps/frontend             && npm run test:unit -- --run --coverage
-cd services/analytics-service && npm run test:unit -- --run --coverage
+cd apps/api-gateway && ./mvnw verify                          # Unit + Integration, 80-%-Grenze
+cd apps/frontend && npm run test:unit -- --run --coverage
+cd services/analytics-service && npm run test:unit -- --run --coverage && npm run test:integration
 ```
 
-Coverage-Gate **≥ 80 %** in allen Modulen erzwungen (Frontend ~95 %, analytics-service 100 % der
-Logik-Schicht). Flaky-Test-Policy: [FLAKY-TESTS.md](FLAKY-TESTS.md).
+End-to-End gegen den laufenden vollständigen Stack (siehe oben):
 
-## 🔁 CI/CD Pipeline
-
-**GitHub Actions** ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) baut und testet bei jedem
-Push/PR alle Module parallel (Status oben als Badge): `api-gateway` (`./mvnw verify` inkl.
-Testcontainers-ES + EmbeddedKafka), `frontend`, `analytics-service` (Lint + Tests + Build) sowie
-`helm lint`/`template`.
-
-Die produktive **GitLab-CI + ArgoCD-GitOps**-Pipeline ([.gitlab-ci.yml](.gitlab-ci.yml)) bildet den
-Deploy-Pfad gemäß Spec ab — fünf Stages mit pfadbasierten `rules`:
-
-```
-validate ─→ test ─→ build ─→ security ─→ deploy-staging ─→ deploy-prod (manuell)
- lint        unit/IT   images     trivy      ArgoCD sync       ArgoCD sync
+```bash
+cd e2e && npm ci && npx playwright install chromium && npm test
 ```
 
-- **validate** — ESLint + `type-check` (Frontend), Checkstyle (Backend)
-- **test** — Unit + Integration, Coverage als Report/Artifact
-- **build** — Container-Images → Registry (nur `main`/`develop`)
-- **security** — Trivy-Scan, kein Merge bei HIGH/CRITICAL CVEs
-- **deploy** — GitOps via ArgoCD (Staging automatisch, Prod manuelles Gate)
+Die End-to-End-Suite ([`e2e/`](e2e/)) startet keine Container. Sie prüft:
 
-## 📁 Projektstruktur
+| Datei | Was |
+|---|---|
+| `ui.spec.ts` | die Wege eines Lesers im Browser, einmal direkt und einmal über Apache → Varnish; jeder Konsolenfehler lässt den Test scheitern |
+| `events.spec.ts` | Suche und Seitenaufruf bis zur Zeile in PostgreSQL; ungültige Seitenaufrufe kommen dort nicht an |
+| `search-index.spec.ts` | der Suchindex folgt Update-, Delete- und Publish-Ereignissen |
+| `edge.spec.ts` | Cache-Treffer, Invalidierung durch Ereignisse, kein `PURGE` von außen, 404 auch über den Cache, Security-Header |
+| `observability.spec.ts` | Health, exportierte Metriken, Prometheus-Ziele und -Regeln, Grafana-Provisioning, ein Trace über Kafka in Tempo und seine Logzeile in Loki |
+
+Die Bilder in diesem README erzeugt `npm run screenshots` im Ordner `e2e/` am laufenden Stack;
+`./screenshots/render-demo.sh` macht daraus GIF und MP4 (braucht ffmpeg).
+
+Tests mit Flakiness-Verdacht: [FLAKY-TESTS.md](FLAKY-TESTS.md).
+
+## CI
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml), auf `main` und `develop`, bei Pull Requests,
+wöchentlich und manuell:
+
+| Job | Inhalt |
+|---|---|
+| `api-gateway` | `./mvnw verify` mit JaCoCo-Grenze, Checkstyle; Test- und Abdeckungszahlen in der Zusammenfassung des Laufs |
+| `frontend` | Lint, Typprüfung, Unit-Tests mit Abdeckungsgrenze, SSR-Build |
+| `analytics-service` | Lint, Unit-Tests mit Abdeckungsgrenze, Integrationstests gegen PostgreSQL, Build |
+| `varnish` | `varnishtest` |
+| `prometheus` | `promtool check rules` und `promtool test rules` |
+| `helm` | `helm lint`, `helm template` für staging, prod und mit Monitoring |
+| `e2e` | baut und startet den vollständigen Stack mit dem Befehl aus dem Schnellstart, dann die End-to-End-Suite |
+
+[`.gitlab-ci.yml`](.gitlab-ci.yml) beschreibt einen Deploy-Pfad mit GitLab und ArgoCD. Er ist ein
+Entwurf und wurde nie ausgeführt; die bekannten Lücken stehen am Anfang der Datei.
+
+## Projektstruktur
 
 ```
 newscore/
 ├── apps/
-│   ├── api-gateway/        # Spring Boot 3 · GraphQL BFF · ES · Kafka (eigene README)
-│   └── frontend/           # Nuxt 3 · urql · SSR (eigene README)
+│   ├── api-gateway/          Spring Boot · GraphQL · ElasticSearch · Kafka   (eigene README)
+│   └── frontend/             Nuxt · urql · SSR                                (eigene README)
 ├── services/
-│   └── analytics-service/  # Node/TS · Kafka → PostgreSQL (eigene README)
-├── infrastructure/
-│   ├── helm/newscore/      # Umbrella-Chart (Deploy/Svc/HPA/PDB/Ingress/NetworkPolicy/ServiceMonitor)
-│   ├── argocd/             # ArgoCD Application-Manifeste (staging/prod)
-│   ├── prometheus/         # Scrape-Config + Alert-Rules
-│   ├── grafana/            # Provisioning (Datasources) + Dashboards
-│   ├── loki/               # Promtail-Config (Log-Aggregation)
-│   ├── varnish/            # default.vcl (Edge-Cache, TTLs, PURGE)
-│   └── apache/             # Reverse-Proxy (TLS/gzip/Security-Header)
+│   └── analytics-service/    Node.js · Kafka → PostgreSQL                     (eigene README)
+├── e2e/                      Playwright gegen den Compose-Stack
+├── infrastructure/           Apache, Varnish, Prometheus, Grafana, Loki, Tempo, Helm, ArgoCD
+│                             (eigene README)
 ├── docs/
-│   ├── adr/                # Architecture Decision Records
-│   ├── defects/            # Defect-Template + Bugs
-│   └── images/banner.svg
-├── .github/                # Actions-CI, Issue/PR-Templates, Dependabot, CODEOWNERS
-├── .githooks/              # pre-commit · commit-msg · pre-push
-├── docker-compose.yml      # lokales Stack-Setup (ES + Kafka + Registry + Postgres)
-├── .gitlab-ci.yml          # GitLab-CI/GitOps-Pipeline (Deploy)
-├── CONTRIBUTING.md · FLAKY-TESTS.md · LICENSE
-└── README.md
+│   ├── adr/                  Architecture Decision Records
+│   ├── defects/              Fehlerberichte
+│   └── images/
+├── docker-compose.yml
+├── stack-full.env            Schalter für den vollständigen Stack
+├── .github/                  CI, Dependabot, Vorlagen
+└── .githooks/
 ```
 
-## 🐞 Defect Management
-
-Bugs werden in [`docs/defects/`](docs/defects/) nach dem
-[Defect-Template](docs/defects/DEFECT-TEMPLATE.md) dokumentiert (Severity, Repro-Schritte,
-Root Cause, Regressionstest).
-
-## 📐 Architecture Decision Records
+## Entscheidungen (ADRs)
 
 | ADR | Entscheidung |
-|-----|--------------|
+|---|---|
 | [ADR-001](docs/adr/ADR-001-graphql-client-urql.md) | urql als GraphQL-Client im Frontend |
-| [ADR-002](docs/adr/ADR-002-graphql-bff-pattern.md) | GraphQL-Gateway nach BFF-Pattern |
+| [ADR-002](docs/adr/ADR-002-graphql-bff-pattern.md) | GraphQL-Gateway nach dem BFF-Muster |
 | [ADR-003](docs/adr/ADR-003-caffeine-caching.md) | Caffeine als In-Process-Cache |
-| [ADR-004](docs/adr/ADR-004-elasticsearch-search.md) | ElasticSearch als Volltextsuche (Profil-gesteuert) |
-| [ADR-005](docs/adr/ADR-005-kafka-eventing.md) | Kafka-Eventing mit JSON-Serialisierung + DLQ |
-| [ADR-006](docs/adr/ADR-006-helm-argocd-gitops.md) | Helm-Umbrella-Chart + ArgoCD-GitOps |
-| [ADR-007](docs/adr/ADR-007-observability.md) | Observability mit Prometheus, Grafana und Loki |
-| [ADR-008](docs/adr/ADR-008-varnish-caching.md) | Varnish-Edge-Cache + Apache-Reverse-Proxy |
-| [ADR-009](docs/adr/ADR-009-distributed-tracing.md) | Distributed Tracing mit OpenTelemetry + Tempo |
-| [ADR-010](docs/adr/ADR-010-sophora-cms-source.md) | Sophora-CMS als austauschbare Datenquelle |
-| [ADR-011](docs/adr/ADR-011-avro-schema-registry.md) | Avro + Schema-Registry (ersetzt ADR-005 §2) |
+| [ADR-004](docs/adr/ADR-004-elasticsearch-search.md) | ElasticSearch als Volltextsuche, per Profil |
+| [ADR-005](docs/adr/ADR-005-kafka-eventing.md) | Kafka mit Dead-Letter-Topic (Serialisierung durch ADR-011 ersetzt) |
+| [ADR-006](docs/adr/ADR-006-helm-argocd-gitops.md) | Helm-Chart und ArgoCD |
+| [ADR-007](docs/adr/ADR-007-observability.md) | Prometheus, Grafana, Loki |
+| [ADR-008](docs/adr/ADR-008-varnish-caching.md) | Varnish und Apache vor dem Frontend (Nachtrag: Ban statt Purge) |
+| [ADR-009](docs/adr/ADR-009-distributed-tracing.md) | Tracing mit OpenTelemetry und Tempo |
+| [ADR-010](docs/adr/ADR-010-sophora-cms-source.md) | CMS als austauschbare Artikelquelle (Nachtrag: eigener HTTP-Vertrag) |
+| [ADR-011](docs/adr/ADR-011-avro-schema-registry.md) | Avro und Schema Registry |
+| [ADR-012](docs/adr/ADR-012-same-origin-und-csp.md) | Browser nur gegen die eigene Origin, CSP per Hash |
+| [ADR-013](docs/adr/ADR-013-analytics-zustellung.md) | Analytics: mindestens einmal zustellen, idempotent speichern |
 
-## 🛣 Roadmap
+## Grenzen
 
-- ✅ **Volltextsuche:** ElasticSearch-`SearchService` (profil-gesteuert, Testcontainers) — erledigt
-- ✅ **Eventing (Epic 4):** Kafka-Producer/Consumer, DLQ, aktive Cache-Invalidierung, Analytics → Postgres — erledigt
-- ✅ **Plattform (Epic 5):** Helm-Umbrella-Chart, ArgoCD-Apps, HPA/PDB, NetworkPolicies (OpenShift) — erledigt
-- ✅ **Observability (Epic 6):** Prometheus-Scrape/Alerts, Grafana-Dashboards, JSON-Logs → Loki — erledigt
-- ✅ **Caching (Epic 3):** Varnish-VCL + Apache-Proxy, event-getriebenes `PURGE` — erledigt
-- ✅ **Tracing:** OpenTelemetry + Tempo (OTLP), Trace↔Logs-Korrelation — erledigt
-- ✅ **Datenanbindung:** Sophora-CMS-HTTP-Adapter (Profil `sophora`), Default In-Memory — erledigt
-- ✅ **Analytics-Eventing:** `user.pageview`-Producer im Frontend — erledigt
-- ✅ **Eventing-Härtung:** Avro + Confluent Schema-Registry (ersetzt JSON aus ADR-005) — erledigt
-- **Frontend:** GraphQL-Codegen, Playwright-E2E, i18n, PWA
+- **Kein Cluster.** Das Helm-Chart ist nur mit `helm lint` und `helm template` geprüft, nie
+  installiert. Die ArgoCD-Applications zeigen auf ein Platzhalter-Repository. Lasttests gibt es nicht;
+  die Zielwerte in ADR-008 (Antwortzeit, Trefferquote) sind nicht gemessen.
+- **CMS-Adapter ohne CMS.** Der HTTP-Vertrag ist für dieses Projekt festgelegt und nur gegen einen
+  Mock getestet, nie gegen eine Sophora-Installation.
+- **Keine Authentifizierung.** Der CMS-Simulator unter `/internal/cms/**` ist über den Port des
+  Gateways (8080) erreichbar.
+- **Analytics:** keine Dead-Letter-Queue auf der Node-Seite, keine Metriken; kafkajs hat seit 2023
+  kein Release mehr.
+- **Suchseiten** werden nicht aktiv invalidiert (Varnish-TTL 30 s).
+- **Abdeckung im Frontend** wird nur für Komponenten, Services und Hilfsfunktionen gemessen. Seiten,
+  Plugins und Server-Routen laufen in der End-to-End-Suite, ohne Abdeckungsmessung.
 
-## 📄 Lizenz
+## Lizenz
 
 [MIT](LICENSE)

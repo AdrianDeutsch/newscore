@@ -13,7 +13,7 @@
     </main>
 
     <footer class="app__footer">
-      <p>NewsCore · Demo-Portal · GraphQL BFF + Nuxt 3 SSR · urql</p>
+      <p>NewsCore · Demo-Portal · GraphQL BFF + Nuxt SSR · urql</p>
     </footer>
   </div>
 </template>

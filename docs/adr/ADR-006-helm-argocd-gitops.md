@@ -70,3 +70,12 @@ Frontend→Gateway und Ingress→Frontend.
 - Chart: `infrastructure/helm/newscore/`
 - ArgoCD: `infrastructure/argocd/`
 - CI-Deploy-Stages: `.gitlab-ci.yml`
+
+## Nachtrag 2026-11-17
+
+Das Chart wurde nie gegen einen Cluster installiert; geprüft sind `helm lint` und `helm template`
+(CI-Job `helm`, seit diesem Datum auch mit `monitoring.enabled=true`). Die ArgoCD-Applications zeigen
+auf ein Platzhalter-Repository (`gitlab.example.com`), die GitLab-Pipeline wurde nie ausgeführt.
+Geändert: Das Frontend bekommt statt einer öffentlichen GraphQL-Adresse nur `NUXT_GATEWAY_URL`
+([ADR-012](ADR-012-same-origin-und-csp.md)); die `PrometheusRule` liest die Regeln aus
+`files/prometheus-rules.yml`, derselben Datei wie der lokale Prometheus.
