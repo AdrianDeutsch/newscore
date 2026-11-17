@@ -22,6 +22,7 @@ ENV PORT=3000
 
 COPY --from=build /app/.output ./.output
 
-USER node
+# Numeric (the image's "node" user): with runAsNonRoot, Kubernetes can only verify a numeric UID.
+USER 1000
 EXPOSE 3000
 CMD ["node", ".output/server/index.mjs"]

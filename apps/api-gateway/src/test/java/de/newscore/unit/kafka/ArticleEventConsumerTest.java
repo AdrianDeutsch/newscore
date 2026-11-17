@@ -1,7 +1,5 @@
 package de.newscore.unit.kafka;
 
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -29,13 +27,21 @@ class ArticleEventConsumerTest {
     private ObjectProvider<ArticleIndexer> indexerProvider;
     @Mock
     private ArticleIndexer indexer;
+    /** Two caches, two mocks: a consumer that cleared only one of them must fail the test. */
     @Mock
-    private Cache cache;
+    private Cache articleCache;
+    @Mock
+    private Cache articlesCache;
     @Mock
     private CachePurger cachePurger;
 
     private ArticleEventConsumer consumer() {
         return new ArticleEventConsumer(cacheManager, indexerProvider, cachePurger);
+    }
+
+    private void stubCaches() {
+        when(cacheManager.getCache("article")).thenReturn(articleCache);
+        when(cacheManager.getCache("articles")).thenReturn(articlesCache);
     }
 
     private static ArticleEvent event(ArticleEventType type, String articleId) {
@@ -49,13 +55,13 @@ class ArticleEventConsumerTest {
     @Test
     @DisplayName("PUBLISHED evicts caches and re-indexes the article")
     void published_evictsAndReindexes() {
-        when(cacheManager.getCache("article")).thenReturn(cache);
-        when(cacheManager.getCache("articles")).thenReturn(cache);
+        stubCaches();
         when(indexerProvider.getIfAvailable()).thenReturn(indexer);
 
         consumer().onArticleEvent(event(ArticleEventType.PUBLISHED, "1"));
 
-        verify(cache, atLeastOnce()).clear();
+        verify(articleCache).clear();
+        verify(articlesCache).clear();
         verify(cachePurger).purgeArticle("1");
         verify(cachePurger).purgeHomepage();
         verify(indexer).indexOne("1");
@@ -64,7 +70,7 @@ class ArticleEventConsumerTest {
     @Test
     @DisplayName("DELETED removes the article from the index")
     void deleted_removesFromIndex() {
-        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        stubCaches();
         when(indexerProvider.getIfAvailable()).thenReturn(indexer);
 
         consumer().onArticleEvent(event(ArticleEventType.DELETED, "9"));
@@ -75,12 +81,13 @@ class ArticleEventConsumerTest {
     @Test
     @DisplayName("without an indexer (no ElasticSearch profile) it only evicts caches")
     void withoutIndexer_onlyEvicts() {
-        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        stubCaches();
         when(indexerProvider.getIfAvailable()).thenReturn(null);
 
         consumer().onArticleEvent(event(ArticleEventType.UPDATED, "1"));
 
-        verify(cache, atLeastOnce()).clear();
+        verify(articleCache).clear();
+        verify(articlesCache).clear();
         verifyNoInteractions(indexer);
     }
 }

@@ -9,8 +9,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 /**
- * {@link CachePurger} that sends HTTP {@code PURGE} requests to Varnish (see the PURGE handling in
- * {@code infrastructure/varnish/default.vcl}). Active when {@code newscore.varnish.purge.enabled=true}.
+ * {@link CachePurger} that sends HTTP {@code PURGE} requests to Varnish. Varnish turns each into a
+ * ban on the path, for every host and query variant (see {@code infrastructure/varnish/newscore.vcl}).
+ * Active when {@code newscore.varnish.purge.enabled=true}.
  *
  * <p>Purge failures are swallowed (logged): a missed invalidation falls back to the TTL and must
  * never break event consumption.</p>

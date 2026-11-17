@@ -2,8 +2,8 @@ package de.newscore.web;
 
 import de.newscore.kafka.EventPublisher;
 import de.newscore.kafka.PageViewEvent;
+import java.util.regex.Pattern;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,6 +21,12 @@ public class PageViewController {
 
     /** Longest accepted path; longer values are rejected rather than truncated. */
     static final int MAX_PATH_LENGTH = 2048;
+
+    /**
+     * A leading slash, then unreserved, sub-delimiter, ":", "@", "/", "?", "#" and percent-encoded
+     * characters — what the router's {@code fullPath} contains (query spaces as "+", fragment included).
+     */
+    private static final Pattern SITE_PATH = Pattern.compile("/[A-Za-z0-9\\-._~!$&'()*+,;=:@/?#%]*");
 
     private final EventPublisher eventPublisher;
 
@@ -49,13 +55,15 @@ public class PageViewController {
 
     /**
      * The endpoint is public by nature (a browser beacon), so it only accepts what a page view of
-     * this site can look like: a site-relative path of bounded length. Anything else would let a
-     * caller put arbitrary text onto the event bus and into the analytics table.
+     * this site can look like: a site-relative path of bounded length made of URL characters
+     * (RFC 3986 path and query characters, percent-encoded otherwise — which is how the router
+     * sends them). Spaces, control characters, backslashes and protocol-relative {@code //host}
+     * paths are refused, so no arbitrary text reaches the event bus and the analytics table.
      */
     private static boolean isSitePath(String path) {
-        return StringUtils.hasText(path)
-                && path.startsWith("/")
+        return path != null
+                && path.length() <= MAX_PATH_LENGTH
                 && !path.startsWith("//")
-                && path.length() <= MAX_PATH_LENGTH;
+                && SITE_PATH.matcher(path).matches();
     }
 }

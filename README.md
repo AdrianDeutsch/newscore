@@ -26,19 +26,19 @@ ElasticSearch, Ereignisse über Kafka mit Avro und ein Analytics-Dienst in Node.
 PostgreSQL schreibt. Davor sitzen Apache und Varnish, daneben Prometheus, Grafana, Loki und Tempo.
 Die Inhalte sind acht Demo-Artikel; ein CMS-Adapter kann sie per Profil ersetzen.
 
-Der ganze Stack startet mit einem Befehl. Die CI baut ihn bei jedem Push, startet ihn und prüft ihn
-im Browser, in der Datenbank, im Cache, in den Metriken und in den Traces.
+Der ganze Stack startet mit einem Befehl. Die CI baut ihn, startet ihn und prüft ihn im Browser, in
+der Datenbank, im Cache, in den Metriken und in den Traces.
 
 | Ebene | Tests | Gegen |
 |---|---:|---|
-| Gateway, Unit | 58 | Mocks |
+| Gateway, Unit | 73 | Mocks |
 | Gateway, Integration | 16 | Spring-Kontext, ElasticSearch 8.18 (Testcontainers), EmbeddedKafka mit Mock-Schema-Registry |
-| Frontend, Unit | 25 | Komponenten und Services, gemockter GraphQL-Client |
-| Analytics, Unit | 23 | gemocktes PostgreSQL und Schema Registry |
-| Analytics, Integration | 4 | PostgreSQL 16 (Testcontainers) mit dem Schema des Stacks |
+| Frontend, Unit | 25 | Komponenten, Services, CSP-Berechnung, Datumsformat; gemockter GraphQL-Client |
+| Analytics, Unit | 26 | gemocktes PostgreSQL und Schema Registry |
+| Analytics, Integration | 5 | PostgreSQL 16 (Testcontainers) mit dem Schema des Stacks |
 | Varnish | 2 Dateien | `varnishtest` mit Mock-Backend |
-| Alarmregeln | 7 Fälle | `promtool test rules` |
-| End-to-End | 24 (33 Läufe) | der komplette Compose-Stack, Chromium |
+| Alarmregeln | 8 Fälle | `promtool test rules` |
+| End-to-End | 28 (37 Läufe) | der komplette Compose-Stack, Chromium |
 
 Alle Ebenen laufen in der CI bei jedem Push auf `main` und `develop`, bei jedem Pull Request und
 einmal pro Woche.
@@ -65,19 +65,23 @@ einmal pro Woche.
   ElasticSearch für die Suche, ohne Änderung an den Resolvern.
 - **Ein Artikel-Ereignis hält alles aktuell.** Der CMS-Simulator (`POST /internal/cms/articles/{id}/update`)
   schreibt ein Ereignis nach Kafka. Der Consumer im Gateway leert die Caffeine-Caches, indiziert den
-  Artikel in ElasticSearch neu und invalidiert Artikelseite und Startseite in Varnish. Die
-  End-to-End-Suite prüft jeden dieser Schritte.
+  Artikel in ElasticSearch neu und invalidiert Artikelseite und Startseite in Varnish. Suchindex und
+  Varnish prüft die End-to-End-Suite, das Leeren der Caches ein Integrationstest mit eingebettetem
+  Kafka (die Demo-Artikel ändern sich nie, im Stack ist das nicht beobachtbar).
 - **Analytics ohne Datenverlust bei Ausfällen.** Vorübergehende Fehler führen zu erneuter Zustellung
-  statt zum Verwerfen. Gespeichert wird idempotent über Topic, Partition und Offset
+  statt zum Verwerfen. Gespeichert wird idempotent über eine Ereignis-ID, die das Gateway vergibt
   ([ADR-013](docs/adr/ADR-013-analytics-zustellung.md)).
 - **Der Browser kennt nur eine Origin.** GraphQL-Aufrufe aus dem Browser gehen an den Frontend-Server,
-  der sie weiterreicht. Keine CORS-Freigabe, eine CSP mit Hashes statt `'unsafe-inline'`
-  ([ADR-012](docs/adr/ADR-012-same-origin-und-csp.md)).
+  der sie weiterreicht. Keine CORS-Freigabe; die CSP erlaubt Skripte nur von der eigenen Origin und
+  per Hash, ohne `'unsafe-inline'` ([ADR-012](docs/adr/ADR-012-same-origin-und-csp.md)).
+- **Fehler sind Fehler.** Ein fehlender Artikel antwortet mit 404, ein nicht erreichbares Gateway mit
+  502 (Start, Suche, Artikel). Varnish speichert keine 5xx, 404 nur kurz.
 - **Ein Trace über Kafka hinweg.** Mit `stack-full.env` ergibt eine HTTP-Anfrage an das Gateway
   zusammen mit dem Ereignis, das sie auslöst, einen Trace in Tempo. Die Logzeilen des Consumers tragen
   dieselbe `traceId` und sind in Loki darüber auffindbar.
-- **Alarme, die auslösen können.** Jede Alarmregel hat einen `promtool`-Test; ein End-to-End-Test
-  prüft, dass das Gateway jede Metrik exportiert, die Regeln und Dashboard abfragen.
+- **Alarme, die auslösen können.** Jede Alarmregel hat einen `promtool`-Test. Ein End-to-End-Test
+  prüft, dass das Gateway jede Metrik exportiert, die Regeln und Dashboard abfragen, und dass jede
+  Serie einer Alarm-Metrik einen Zahlenwert hat.
 
 ## Was das Nachmessen gefunden hat
 
@@ -96,10 +100,14 @@ gezeigt. Jeder hat einen Bericht mit Ursache und den Test, der ihn jetzt abdeckt
 | 7 | Nicht vorhandener Artikel antwortet mit 200 und landet so im Cache | [DEFECT-007](docs/defects/DEFECT-007-artikel-404.md) |
 | 8 | Uhrzeit hängt davon ab, ob Server oder Browser rendert | [DEFECT-008](docs/defects/DEFECT-008-zeitzone.md) |
 | 9 | Health-Endpoint meldet DOWN, obwohl das Gateway läuft | [DEFECT-009](docs/defects/DEFECT-009-health-down.md) |
+| 10 | Analytics verwirft nach einem Neustart neue Ereignisse als Duplikate (Fehler im eigenen Fix zu 3, von der unabhängigen Prüfung gefunden) | [DEFECT-010](docs/defects/DEFECT-010-idempotenzschluessel.md) |
+| 11 | Start- und Suchseite antworten bei Gateway-Ausfall mit 200 und werden gecacht | [DEFECT-011](docs/defects/DEFECT-011-startseite-suche-200.md) |
 
-Dazu Funde ohne eigenen Bericht: Die Alarmregel für den Kafka-Lag fragte eine Metrik ab, die es nicht
-gibt; Tempo bekam im Compose-Stack nie einen Trace; der Cache stand nur vor der In-Memory-Quelle, nicht
-vor dem CMS-Adapter; `npm audit` meldete 47 bzw. 18 Schwachstellen (jetzt 0).
+Dazu Funde ohne eigenen Bericht: Die Helm-Variante der Alarmregeln war eine ältere Kopie mit vier
+statt fünf Regeln; Tempo bekam im Compose-Stack nie einen Trace; der Cache stand nur vor der
+In-Memory-Quelle, nicht vor dem CMS-Adapter; das Frontend-Image lief unter einem Benutzernamen statt
+einer UID, was Kubernetes mit `runAsNonRoot` ablehnt; `npm audit` meldete 47 bzw. 18 Schwachstellen
+(jetzt 0).
 
 ## Architektur
 
@@ -181,7 +189,8 @@ Die End-to-End-Suite ([`e2e/`](e2e/)) startet keine Container. Sie prüft:
 | `events.spec.ts` | Suche und Seitenaufruf bis zur Zeile in PostgreSQL; ungültige Seitenaufrufe kommen dort nicht an |
 | `search-index.spec.ts` | der Suchindex folgt Update-, Delete- und Publish-Ereignissen |
 | `edge.spec.ts` | Cache-Treffer, Invalidierung durch Ereignisse, kein `PURGE` von außen, 404 auch über den Cache, Security-Header |
-| `observability.spec.ts` | Health, exportierte Metriken, Prometheus-Ziele und -Regeln, Grafana-Provisioning, ein Trace über Kafka in Tempo und seine Logzeile in Loki |
+| `observability.spec.ts` | Health, exportierte Metriken mit Zahlenwerten, Prometheus-Ziele und -Regeln, Grafana-Provisioning, ein Trace über Kafka (inklusive PURGE-Aufrufen) in Tempo und seine Logzeile in Loki |
+| `gateway-down.spec.ts` | ein zweites Frontend ohne erreichbares Gateway antwortet mit 502 statt 200 |
 
 Die Bilder in diesem README erzeugt `npm run screenshots` im Ordner `e2e/` am laufenden Stack;
 `./screenshots/render-demo.sh` macht daraus GIF und MP4 (braucht ffmpeg).
@@ -256,7 +265,9 @@ newscore/
 - **Keine Authentifizierung.** Der CMS-Simulator unter `/internal/cms/**` ist über den Port des
   Gateways (8080) erreichbar.
 - **Analytics:** keine Dead-Letter-Queue auf der Node-Seite, keine Metriken; kafkajs hat seit 2023
-  kein Release mehr.
+  kein Release mehr. Kein Migrationswerkzeug für das Schema: nach einer Schemaänderung
+  `docker compose down -v`.
+- **Lag-Alarm** misst auf Client-Seite; einen Consumer, der gar nicht mehr fetcht, sieht er nicht.
 - **Suchseiten** werden nicht aktiv invalidiert (Varnish-TTL 30 s).
 - **Abdeckung im Frontend** wird nur für Komponenten, Services und Hilfsfunktionen gemessen. Seiten,
   Plugins und Server-Routen laufen in der End-to-End-Suite, ohne Abdeckungsmessung.

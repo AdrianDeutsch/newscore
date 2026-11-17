@@ -188,9 +188,9 @@
 
             <!--
               Test grouping is driven from the command line (Surefire honours these natively):
-                ./mvnw test                          -> all tests (unit + integration)
-                ./mvnw test -DexcludedGroups=integration  -> unit only (CI: test:unit:java)
-                ./mvnw test -Dgroups=integration          -> integration only (CI: test:integration:java)
+                ./mvnw test                               -> all tests (unit + integration)
+                ./mvnw test -DexcludedGroups=integration  -> unit only (pre-push hook)
+                ./mvnw test -Dgroups=integration          -> integration only
               Integration tests are tagged @Tag("integration").
             -->
 
@@ -218,7 +218,8 @@
                 </configuration>
             </plugin>
 
-            <!-- Checkstyle: lightweight Sun-based checks, wired into the validate phase -->
+            <!-- Checkstyle: lightweight Sun-based checks. Not bound to a phase; run with
+                 ./mvnw checkstyle:check (CI job "api-gateway" and the pre-commit hook). -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>

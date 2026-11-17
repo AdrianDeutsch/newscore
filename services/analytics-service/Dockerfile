@@ -21,5 +21,6 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 COPY --from=build /app/dist ./dist
 
-USER node
+# Numeric (the image's "node" user): with runAsNonRoot, Kubernetes can only verify a numeric UID.
+USER 1000
 CMD ["node", "dist/index.js"]

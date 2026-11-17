@@ -44,13 +44,22 @@ class PageViewControllerTest {
     }
 
     @ParameterizedTest(name = "\"{0}\" is rejected")
-    @ValueSource(strings = {"article/1", "https://evil.example/x", "//evil.example/x"})
-    @DisplayName("a path that is not site-relative is rejected and emits nothing")
+    @ValueSource(strings = {"article/1", "https://evil.example/x", "//evil.example/x", "/\\evil.example",
+        "/a b", "/a\tb", "/a\u0000b", "/<script>", "/ümlaut"})
+    @DisplayName("a path that is not a site-relative URL path is rejected and emits nothing")
     void pageView_notSiteRelative_returnsBadRequest(String path) {
         var response = controller.pageView(new PageViewRequest(path));
 
         assertThat(response.getStatusCode().value()).isEqualTo(400);
         verifyNoInteractions(eventPublisher);
+    }
+
+    @ParameterizedTest(name = "\"{0}\" is accepted")
+    @ValueSource(strings = {"/", "/article/1", "/?category=politik", "/search?q=klima+eu", "/search?q=%C3%A4rzte",
+        "/article/2?e2e=4f1c-9a", "/article/1#kommentare"})
+    @DisplayName("paths as the router sends them are accepted")
+    void pageView_routerPaths_areAccepted(String path) {
+        assertThat(controller.pageView(new PageViewRequest(path)).getStatusCode().value()).isEqualTo(202);
     }
 
     @Test
