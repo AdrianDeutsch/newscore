@@ -21,7 +21,7 @@
         <java.version>21</java.version>
         <jacoco.line.coverage>0.80</jacoco.line.coverage>
         <avro.version>1.12.2</avro.version>
-        <confluent.version>7.9.9</confluent.version>
+        <confluent.version>7.9.11</confluent.version>
         <!-- Set by JaCoCo's prepare-agent; declared empty so Surefire's @{argLine} also resolves
              when JaCoCo is skipped. -->
         <argLine/>
