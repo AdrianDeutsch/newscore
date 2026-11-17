@@ -32,14 +32,19 @@ groups:
           summary: "API 5xx error rate above 1%"
           description: "More than 1% of requests are returning 5xx for 2 minutes."
 
+      # Client-side lag per partition, as reported by the gateway's own consumer. Micrometer registers
+      # it on its 60-second refresh after the consumer has partitions, so it is missing for up to a
+      # minute after a start. It stops changing if the consumer stops fetching; a broker-side exporter
+      # would be needed to see that. The analytics-service exports no metrics.
+      # (records_lag_max is not used: it is a windowed maximum and NaN while no records arrive.)
       - alert: KafkaConsumerLagHigh
-        expr: max(kafka_consumer_fetch_manager_records_lag_max{application="newscore-api-gateway"}) > 1000
+        expr: max(kafka_consumer_fetch_manager_records_lag{application="newscore-api-gateway"}) > 1000
         for: 3m
         labels:
           severity: critical
         annotations:
           summary: "Kafka consumer lag above 1000"
-          description: "The gateway's article-event consumer is more than 1000 records behind for 3 minutes. (The analytics-service exports no metrics and is not covered.)"
+          description: "The gateway's article-event consumer is more than 1000 records behind for 3 minutes."
 
       - alert: JvmHeapPressure
         expr: >-

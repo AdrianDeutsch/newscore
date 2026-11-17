@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { parse } from 'yaml'
 import { expect, test } from '../support/fixtures'
-import { graphql, stack } from '../support/stack'
+import { emitArticleEvent, graphql, stack } from '../support/stack'
 
 const repo = path.resolve(__dirname, '../..')
 
@@ -42,23 +42,38 @@ const grafanaAuth = { Authorization: `Basic ${Buffer.from('admin:admin').toStrin
  * exists.
  */
 test.describe('observability', () => {
-  test('the gateway reports itself UP, ElasticSearch connection included', async () => {
+  test('the gateway reports itself UP', async () => {
     const response = await fetch(`${stack.gateway}/actuator/health`)
 
     expect(response.status).toBe(200)
     expect(await response.json()).toEqual({ status: 'UP', groups: ['liveness', 'readiness'] })
   })
 
-  test('the gateway exports every metric that an alert rule or the dashboard queries', async () => {
-    // At least one HTTP request, so the request metrics exist.
+  test('every metric an alert rule or the dashboard queries is exported, alert metrics with a numeric value', async () => {
+    // Micrometer picks up new Kafka client metrics (the per-partition lag) on a 60-second refresh,
+    // so right after the stack started they can take up to a minute to appear.
+    test.setTimeout(120_000)
+    // Traffic, so the request metrics exist, and an article event, so the consumer has fetched.
     await graphql('{ articles(limit: 1) { totalCount } }')
+    await emitArticleEvent('2', 'update')
 
-    const exported = await (await fetch(`${stack.gateway}/actuator/prometheus`)).text()
+    const samples = async (name: string): Promise<string[]> => {
+      const exported = await (await fetch(`${stack.gateway}/actuator/prometheus`)).text()
+      return exported.split('\n').filter((line) => line.startsWith(`${name}{`) || line.startsWith(`${name} `))
+        .map((line) => line.slice(line.lastIndexOf(' ') + 1))
+    }
+
     const queried = metricNames([...alertExpressions(), ...dashboardExpressions()])
-
     expect(queried.length).toBeGreaterThan(3)
-    const missing = queried.filter((name) => !new RegExp(`^${name}[{ ]`, 'm').test(exported))
-    expect(missing, `queried but not exported: ${missing.join(', ')}`).toEqual([])
+    for (const name of queried) {
+      await expect.poll(() => samples(name), { message: `${name} is not exported`, timeout: 90_000, intervals: [2_000] }).not.toEqual([])
+    }
+
+    // An alert on a metric that is NaN never fires. Every series of an alert metric must be a number.
+    for (const name of metricNames(alertExpressions())) {
+      const values = await samples(name)
+      expect(values.filter((value) => !Number.isFinite(Number(value))), `${name} has non-numeric samples`).toEqual([])
+    }
   })
 
   test('Prometheus scrapes the gateway and has loaded every alert rule', async () => {
@@ -114,7 +129,8 @@ test.describe('observability', () => {
         }
         return [...new Set(body.batches.flatMap((batch) => batch.scopeSpans.flatMap((scope) => scope.spans.map((span) => span.kind))))].sort()
       }, { timeout: 30_000, intervals: [1_000] })
-      .toEqual(expect.arrayContaining(['SPAN_KIND_CONSUMER', 'SPAN_KIND_PRODUCER', 'SPAN_KIND_SERVER']))
+      // SERVER: the HTTP request; PRODUCER/CONSUMER: the Kafka hop; CLIENT: the PURGE calls to Varnish.
+      .toEqual(['SPAN_KIND_CLIENT', 'SPAN_KIND_CONSUMER', 'SPAN_KIND_PRODUCER', 'SPAN_KIND_SERVER'])
 
     // Loki: the consumer's log line, found by the trace id — the query Grafana's
     // "logs for this trace" link uses (infrastructure/grafana/provisioning/datasources).
