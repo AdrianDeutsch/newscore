@@ -4,6 +4,7 @@ import { handleSearchEvent } from '../src/searchEventHandler'
 import type { MessageSource } from '../src/types'
 
 const SOURCE: MessageSource = { topic: 'newscore.search.events', partition: 0, offset: '7' }
+const EVENT_ID = '0b5c7a1e-3f0e-4a8e-9c1d-2f6b7a9e4c11'
 
 function createRepository() {
   return {
@@ -20,16 +21,25 @@ describe('handleSearchEvent', () => {
     repository = createRepository()
   })
 
-  it('records a valid event together with the Kafka record it came from', async () => {
+  it('records a valid event with its eventId and the Kafka record it came from', async () => {
     const outcome = await handleSearchEvent(
-      { query: 'klima', resultCount: 2, occurredAt: '2026-06-19T10:00:00Z' },
+      { eventId: EVENT_ID, query: 'klima', resultCount: 2, occurredAt: '2026-06-19T10:00:00Z' },
       SOURCE,
       repository,
     )
 
     expect(outcome).toBe('recorded')
     expect(repository.insertSearchEvent).toHaveBeenCalledWith(
-      { query: 'klima', resultCount: 2, occurredAt: '2026-06-19T10:00:00Z' },
+      { eventId: EVENT_ID, query: 'klima', resultCount: 2, occurredAt: '2026-06-19T10:00:00Z' },
+      SOURCE,
+    )
+  })
+
+  it('uses the Kafka coordinates as key for an event without eventId', async () => {
+    await handleSearchEvent({ eventId: '', query: 'klima', resultCount: 2 }, SOURCE, repository)
+
+    expect(repository.insertSearchEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ eventId: 'kafka:newscore.search.events:0:7' }),
       SOURCE,
     )
   })

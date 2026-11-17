@@ -39,9 +39,9 @@ Der Fehler wird geloggt, kafkajs committet das Offset, die Nachricht ist verlore
 ## Fix
 
 - `src/messageProcessor.ts` trennt die Fälle: ohne Avro-Rahmen oder mit falscher Form → überspringen; alles andere wird geworfen, kafkajs stellt erneut zu.
-- Weil damit mindestens einmal zugestellt wird, speichert jede Zeile ihre Herkunft (`source_topic`, `source_partition`, `source_offset`) mit eindeutigem Schlüssel; eingefügt wird mit `ON CONFLICT DO NOTHING`.
+- Weil damit mindestens einmal zugestellt wird, ist das Einfügen idempotent. Der Schlüssel ist die `eventId` des Ereignisses; die erste Fassung nahm dafür Topic, Partition und Offset, was nach einem Neustart Ereignisse verwarf ([DEFECT-010](DEFECT-010-idempotenzschluessel.md)).
 - Offen: Eine Nachricht mit gültigem Rahmen, aber unbekannter Schema-ID würde die Partition blockieren. Eine Dead-Letter-Queue auf der Node-Seite gibt es nicht.
 
 ## Regressionstest
 
-`services/analytics-service/tests/messageProcessor.test.ts` („throws when PostgreSQL fails …“, „throws when the Schema Registry fails …“) und `tests/integration/analyticsRepository.int.test.ts` („stores the same Kafka record only once“) gegen echtes PostgreSQL.
+`services/analytics-service/tests/messageProcessor.test.ts` („throws when PostgreSQL fails …“, „throws when the Schema Registry fails …“) und `tests/integration/analyticsRepository.int.test.ts` („stores a redelivered event only once“) gegen echtes PostgreSQL.

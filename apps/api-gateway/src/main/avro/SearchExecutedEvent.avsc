@@ -4,6 +4,12 @@
   "name": "SearchExecutedEvent",
   "doc": "Search-executed analytics event (Epic 4 / ADR-011).",
   "fields": [
+    {
+      "name": "eventId",
+      "type": "string",
+      "default": "",
+      "doc": "Unique id of this event (UUID), the idempotency key in the analytics store. The default keeps the schema backward compatible; consumers fall back to the Kafka coordinates when it is empty."
+    },
     { "name": "query", "type": "string" },
     { "name": "resultCount", "type": "int" },
     { "name": "occurredAt", "type": "string", "doc": "ISO-8601 timestamp" }

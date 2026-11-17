@@ -9,7 +9,9 @@ const PAGE_VIEW: MessageSource = { topic: 'newscore.user.events', partition: 2, 
 /** A Confluent-framed payload: magic byte 0, 4-byte schema id, then the Avro body. */
 const FRAMED = Buffer.from([0, 0, 0, 0, 1, 42])
 
-function setup(decoded: unknown = { query: 'klima', resultCount: 2, occurredAt: '2026-06-19T10:00:00Z' }) {
+const EVENT_ID = '0b5c7a1e-3f0e-4a8e-9c1d-2f6b7a9e4c11'
+
+function setup(decoded: unknown = { eventId: EVENT_ID, query: 'klima', resultCount: 2, occurredAt: '2026-06-19T10:00:00Z' }) {
   const repository = {
     insertSearchEvent: vi.fn().mockResolvedValue(true),
     insertPageView: vi.fn().mockResolvedValue(true),
@@ -36,18 +38,18 @@ describe('createMessageProcessor', () => {
   it('records a search event from the search topic', async () => {
     expect(await context.processMessage(SEARCH, FRAMED)).toBe('recorded')
     expect(context.repository.insertSearchEvent).toHaveBeenCalledWith(
-      { query: 'klima', resultCount: 2, occurredAt: '2026-06-19T10:00:00Z' },
+      { eventId: EVENT_ID, query: 'klima', resultCount: 2, occurredAt: '2026-06-19T10:00:00Z' },
       SEARCH,
     )
     expect(context.repository.insertPageView).not.toHaveBeenCalled()
   })
 
   it('routes a message from the page-view topic to the page-view table', async () => {
-    context = setup({ path: '/article/1', occurredAt: '2026-06-20T10:00:00Z' })
+    context = setup({ eventId: EVENT_ID, path: '/article/1', occurredAt: '2026-06-20T10:00:00Z' })
 
     expect(await context.processMessage(PAGE_VIEW, FRAMED)).toBe('recorded')
     expect(context.repository.insertPageView).toHaveBeenCalledWith(
-      { path: '/article/1', occurredAt: '2026-06-20T10:00:00Z' },
+      { eventId: EVENT_ID, path: '/article/1', occurredAt: '2026-06-20T10:00:00Z' },
       PAGE_VIEW,
     )
     expect(context.repository.insertSearchEvent).not.toHaveBeenCalled()
