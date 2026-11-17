@@ -26,6 +26,11 @@ management:
       exposure:
         # Prometheus scrape endpoint at /actuator/prometheus (Epic 6)
         include: health,info,metrics,prometheus
+  health:
+    elasticsearch:
+      # The ElasticSearch client is always on the classpath, so Boot would check ElasticSearch even
+      # without the "elasticsearch" profile and report the whole service DOWN. Enabled in that profile.
+      enabled: false
   endpoint:
     health:
       probes:

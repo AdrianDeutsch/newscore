@@ -7,3 +7,8 @@ spring:
     elasticsearch:
       repositories:
         enabled: true
+
+management:
+  health:
+    elasticsearch:
+      enabled: true

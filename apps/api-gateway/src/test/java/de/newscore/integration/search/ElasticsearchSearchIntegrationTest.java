@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -26,16 +27,22 @@ import org.testcontainers.utility.DockerImageName;
  * Testcontainers. {@code @ServiceConnection} auto-configures {@code spring.elasticsearch.uris} from
  * the started container.
  */
-@SpringBootTest(classes = NewsCoreApplication.class)
+@SpringBootTest(
+        classes = NewsCoreApplication.class,
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = "management.endpoint.health.show-components=always")
 @ActiveProfiles("elasticsearch")
 @Testcontainers(disabledWithoutDocker = true)
 @Tag("integration")
 class ElasticsearchSearchIntegrationTest {
 
+    // Same version as docker-compose.yml, and the version of the Java client that Spring Boot
+    // manages (elasticsearch-client.version). A server older than the client still answers
+    // searches, but the client cannot decode its cluster-health response, so the health check fails.
     @Container
     @ServiceConnection
     static ElasticsearchContainer elasticsearch = new ElasticsearchContainer(
-            DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch:8.13.4"))
+            DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch:8.18.8"))
             .withEnv("xpack.security.enabled", "false");
 
     @Autowired
@@ -43,6 +50,9 @@ class ElasticsearchSearchIntegrationTest {
 
     @Autowired
     private ArticleIndexer indexer;
+
+    @Autowired
+    private TestRestTemplate http;
 
     @BeforeEach
     void reindex() {
@@ -62,6 +72,15 @@ class ElasticsearchSearchIntegrationTest {
 
         assertThat(result.totalCount()).isEqualTo(2);
         assertThat(result.results()).extracting(Article::id).containsExactlyInAnyOrder("1", "6");
+    }
+
+    @Test
+    @DisplayName("under this profile the health endpoint checks ElasticSearch")
+    void health_includesElasticsearch() {
+        var health = http.getForEntity("/actuator/health/elasticsearch", String.class);
+
+        assertThat(health.getStatusCode().value()).isEqualTo(200);
+        assertThat(health.getBody()).contains("\"status\":\"UP\"");
     }
 
     @Test
