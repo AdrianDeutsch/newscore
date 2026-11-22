@@ -4,7 +4,7 @@
 # The Maven image brings Maven itself, so the build does not rely on tools the JDK base image may
 # or may not ship (the wrapper needs `unzip`, which newer eclipse-temurin images dropped — see
 # docs/defects/DEFECT-001).
-FROM maven:3.9-eclipse-temurin-21-noble AS build
+FROM maven:3.9-eclipse-temurin-26-noble AS build
 WORKDIR /workspace
 
 COPY pom.xml ./
